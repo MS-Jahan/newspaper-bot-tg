@@ -15,16 +15,16 @@ headers = {
 
 # load_dotenv()
 
-# bot = telepot.Bot(os.getenv('prodipto_bot_token'))
-nu_bot = telepot.Bot(os.getenv('bot_token'))
-chat_id = str(os.getenv('prodipto_shatash_chat_id'))
-nu_chat_id = str(os.getenv('national_university_chat_id'))
+# bot = telepot.Bot(os.getenv('PRODIPTO_BOT_TOKEN'))
+nu_bot = telepot.Bot(os.getenv('BOT_TOKEN'))
+chat_id = str(os.getenv('PRODIPTO_SHATASH_CHAT_ID'))
+nu_chat_id = str(os.getenv('NATIONAL_UNIVERSITY_CHAT_ID'))
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 SAVED_URLS_FILE_NAME = "newspaper-bot-urls/nu_notices.txt"
 absolute_path = os.path.join(__location__, SAVED_URLS_FILE_NAME)
-error_message_chat_id = os.getenv('error_message_chat_id')
+error_message_chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
 
-# print(os.getenv('prodipto_bot_token'), os.getenv('prodipto_shatash_chat_id'))
+# print(os.getenv('PRODIPTO_BOT_TOKEN'), os.getenv('PRODIPTO_SHATASH_CHAT_ID'))
 
 def getHtml(url):
     retry = 0

@@ -10,9 +10,9 @@ from dotenv import load_dotenv
 # load_dotenv()
 
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-bot = telepot.Bot(os.getenv('bot_token'))
-chat_id = os.getenv('science_chat_id')
-error_message_chat_id = os.getenv('error_message_chat_id')
+bot = telepot.Bot(os.getenv('BOT_TOKEN'))
+chat_id = os.getenv('SCIENCE_CHAT_ID')
+error_message_chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
 SAVED_URLS_FILE_NAME = "newspaper-bot-urls/ridmik-science-saved-urls.txt"
 current_year = str(time.strftime("%Y"))
 prev_urls = []

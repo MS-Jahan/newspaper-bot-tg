@@ -17,8 +17,8 @@ import gitt
 # Needed when hosted on heroku like services
 # keep_alive.keep_alive()
 
-bot = telepot.Bot(os.getenv('bot_token'))
-chat_id = os.getenv('error_message_chat_id')
+bot = telepot.Bot(os.getenv('BOT_TOKEN'))
+chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
 
 bot.sendMessage(chat_id, "News bot is awake! (from render.com)")
 

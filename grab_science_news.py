@@ -23,9 +23,9 @@ def getHtml(url):
 def check():
     # load_dotenv()
 
-    bot = telepot.Bot(os.getenv('bot_token')) # Telegram Bot Token 
-    chat_id = os.getenv('science_chat_id')
-    error_message_chat_id = os.getenv('error_message_chat_id')
+    bot = telepot.Bot(os.getenv('BOT_TOKEN')) # Telegram Bot Token 
+    chat_id = os.getenv('SCIENCE_CHAT_ID')
+    error_message_chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
 
     HOMEPAGES = ["https://www.prothomalo.com/technology", "https://www.prothomalo.com/education/science-tech"]
 

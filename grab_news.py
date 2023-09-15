@@ -16,8 +16,8 @@ def check():
     HOMEPAGE = "https://www.prothomalo.com/"
 
 
-    bot = telepot.Bot(os.getenv('bot_token'))
-    chat_id = os.getenv('chat_id')
+    bot = telepot.Bot(os.getenv('BOT_TOKEN'))
+    chat_id = os.getenv('CHAT_ID')
 
     def getHtml(url):
         # r = requests.get(url)

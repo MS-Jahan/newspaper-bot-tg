@@ -21,8 +21,8 @@ def check():
     global TECHNEWS_URL, SAVED_URLS_FILE_NAME
     # load_dotenv()
 
-    bot = telepot.Bot(os.getenv('bot_token')) # Telegram Bot Token 
-    chat_id = os.getenv('science_chat_id')
+    bot = telepot.Bot(os.getenv('BOT_TOKEN')) # Telegram Bot Token 
+    chat_id = os.getenv('SCIENCE_CHAT_ID')
 
 
     print(TECHNEWS_URL, SAVED_URLS_FILE_NAME)
