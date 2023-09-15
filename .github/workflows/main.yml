@@ -26,8 +26,6 @@ jobs:
         run: |
           secrets=$(echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | .key + "=" + .value')
           echo "$secrets" >> $GITHUB_ENV
-      - name: Remove secrets.json
-        run: rm secrets.json
       - name: Run the script
         run: python main.py
         working-directory: .
