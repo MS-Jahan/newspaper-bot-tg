@@ -1,0 +1,33 @@
+name: newspaper_scraper_periodic
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Installed package list
+        run: apt list --installed
+      - name: Install git
+        run: sudo apt install git
+      - name: Install all necessary packages
+        run: pip install -r requirements.txt
+      - name: Expose GitHub secrets as individual environment variables
+        env:
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
+        run: |
+          secrets=$(echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | .key + "=" + .value')
+          echo "$secrets" >> $GITHUB_ENV
+      - name: Run the script
+        run: python main.py
+        working-directory: .
