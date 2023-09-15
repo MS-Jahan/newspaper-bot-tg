@@ -20,13 +20,15 @@ jobs:
         run: sudo apt install git
       - name: Install all necessary packages
         run: pip install -r requirements.txt
-      - name: Set up secrets
-        run: echo "${{ toJson(secrets) }}" >> secrets.json
-      - name: Load secrets into environment variables
+      - name: Expose GitHub environment as shell variables
+        env:
+          SECRETS_CONTEXT: ${{ toJson(secrets) }}
         run: |
-          cat secrets.json | jq -r 'to_entries[] | "export \(.key)=\(.value)"' >> $GITHUB_ENV
-      - name: Remove secrets.json
-        run: rm secrets.json
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          to_envs() { jq -r "to_entries[] | \"\(.key)<<$EOF\n\(.value)\n$EOF\n\""; }
+          echo "$SECRETS_CONTEXT" | to_envs >> $GITHUB_ENV
       - name: Run the script
         run: python main.py
         working-directory: .
+      - name: Remove secrets.json
+        run: rm secrets.json
