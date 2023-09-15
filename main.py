@@ -21,7 +21,7 @@ from threading import Thread
 bot = telepot.Bot(os.getenv('BOT_TOKEN'))
 chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
 
-bot.sendMessage(chat_id, "News bot is awake! (from render.com)")
+bot.sendMessage(chat_id, "News bot is awake! (from Github Actions)")
 
 if os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is True:
     shutil.rmtree(os.getenv('NEWSPAPER_URLS_GIT_REPO'))
@@ -72,7 +72,7 @@ bot.sendMessage(chat_id, output)
 time.sleep(1)
 
 print("Sent news for this time!")
-bot.sendMessage(chat_id, "Sent news for this time! (from render.com)")
+bot.sendMessage(chat_id, "Sent news for this time! (from Github Actions)")
 
   
 # time.sleep(60*60)
