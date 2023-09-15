@@ -95,7 +95,7 @@ def check():
             f.write(str(htmlsoup))
         
         # send file to telegram
-        bot.sendDocument(error_message_chat_id, open(os.path.join(__location__, 'bbc-bangla-index-pages.html'), 'rb'), caption="from render.com")
+        bot.sendDocument(error_message_chat_id, open(os.path.join(__location__, 'bbc-bangla-index-pages.html'), 'rb'), caption="from Github Actions")
 
         links_in_homepage = htmlsoup.find_all('a')
 

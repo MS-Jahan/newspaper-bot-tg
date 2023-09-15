@@ -63,7 +63,7 @@ def check():
                 f.write(str(htmlsoup))
 
             # send file to telegram
-            bot.sendDocument(error_message_chat_id, open("science_page_sample.html", "rb"), caption="Science page sample (from render.com)")
+            bot.sendDocument(error_message_chat_id, open("science_page_sample.html", "rb"), caption="Science page sample (from Github Actions)")
             
             data = htmlsoup.find(id="static-page").string
 
