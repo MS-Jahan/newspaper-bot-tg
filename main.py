@@ -11,6 +11,7 @@ import telepot
 import traceback
 import shutil
 import gitt
+from threading import Thread
 
 # load_dotenv()
 
@@ -34,42 +35,36 @@ while os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is False:
 
 print("Cloning is completed!")
 
+THREADS = []
 
-try:
-    nunotice.fetch()
-except Exception:
-    print(str(traceback.format_exc()))
-    bot.sendMessage(chat_id, str(traceback.format_exc()))
+def run_function(func):
+    try:
+        # nunotice.fetch()
+        func()
+    except Exception:
+        print(str(traceback.format_exc()))
+        bot.sendMessage(chat_id, str(traceback.format_exc()))
 
-try:
-    grab_ridmik_science_news.check()
-except Exception:
-    print(str(traceback.format_exc()))
-    bot.sendMessage(chat_id, str(traceback.format_exc()))
 
-try:
-    grab_science_news.check()
-except Exception:
-    print(str(traceback.format_exc()))
-    bot.sendMessage(chat_id, str(traceback.format_exc()))
+THREADS.append(Thread(target=run_function, args=(nunotice.fetch,)))
+THREADS.append(Thread(target=run_function, args=(grab_ridmik_science_news.check,)))
+THREADS.append(Thread(target=run_function, args=(grab_science_news.check,)))
+THREADS.append(Thread(target=run_function, args=(grab_kalerkontho_science_news.check,)))
+THREADS.append(Thread(target=run_function, args=(grab_news.check,)))
+THREADS.append(Thread(target=run_function, args=(grab_bbc_news.check,)))
 
-try:
-    grab_kalerkontho_science_news.check()
-except Exception:
-    print(str(traceback.format_exc()))
-    bot.sendMessage(chat_id, str(traceback.format_exc()))
 
-try:
-    grab_news.check()
-except Exception:
-    print(str(traceback.format_exc()))
-    bot.sendMessage(chat_id, str(traceback.format_exc()))
+# THREADS.append(Thread(target=grab_ridmik_science_news.check))
+# THREADS.append(Thread(target=grab_science_news.check))
+# THREADS.append(Thread(target=grab_kalerkontho_science_news.check))
+# THREADS.append(Thread(target=grab_news.check))
+# THREADS.append(Thread(target=grab_bbc_news.check))
 
-try:
-    grab_bbc_news.check()
-except Exception:
-    print(str(traceback.format_exc()))
-    bot.sendMessage(chat_id, str(traceback.format_exc()))
+for thread in THREADS:
+    thread.start()
+
+for thread in THREADS:
+    thread.join()
 
 
 output = gitt.gitTask()
