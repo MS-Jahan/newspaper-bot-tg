@@ -1,0 +1,32 @@
+name: campfire_scraper
+on: workflow_dispatch
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./campfire_scraper
+    steps:
+      - name: Check out this repo
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.9'
+      - name: Installed package list
+        run: apt list --installed
+      - name: Install git
+        run: sudo apt install git
+      - name: Install all necessary packages
+        run: pip install -r requirements.txt
+      - name: Set up secrets
+        run: echo "${{ toJson(secrets) }}" >> secrets.json
+      - name: Load secrets into environment variables
+        run: |
+          cat secrets.json | jq -r 'to_entries[] | "export \(.key)=\(.value)"' >> $GITHUB_ENV
+      - name: Remove secrets.json
+        run: rm secrets.json
+      - name: Run the script
+        run: python main.py
+        working-directory: .
