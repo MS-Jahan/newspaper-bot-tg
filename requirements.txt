@@ -11,7 +11,6 @@ html-telegraph-poster
 idna
 itsdangerous
 Jinja2
-lxml
 MarkupSafe
 mega.py
 multidict
