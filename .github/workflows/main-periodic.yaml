@@ -18,9 +18,9 @@ jobs:
           python-version: '3.9'
       - name: Installed package list
         run: apt list --installed
-      - name: Install git
-        run: sudo apt install git
-      - name: Install all necessary packages
+      - name: Install necessary packages
+        run: sudo apt install git libxml2-dev libxslt-dev python3-dev python3-lxml
+      - name: Install all necessary python modules
         run: pip install -r requirements.txt
       - name: Expose GitHub secrets as individual environment variables
         env:
