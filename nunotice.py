@@ -13,24 +13,27 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0'
 }
 
-porikkha_keywords = [
-    "পরীক্ষা",
-    "পরীক্ষার সময়সূচী",
-    "পরীক্ষার সময়সূচি",
-    "ফরম পূরণ",
-    "ফলাফল"
-]
+porikkha_keywords = {
+    ["পরীক্ষা"]: "Exam",
+    ["পরীক্ষার সময়সূচী", "পরীক্ষার সময়সূচি"]: "Exam Schedule",
+    ["ফরম পূরণ"]: "Form Fillup",
+    ["ফলাফল"]: "Result",
+}
 
-other_keywords = [
-    "১ম বর্ষ", "প্রথম বর্ষ", "১ম সিমেস্টার", "প্রথম সিমেস্টার",
-    "২য় বর্ষ", "দ্বিতীয় বর্ষ", "২য় সিমেস্টার", "দ্বিতীয় সিমেস্টার",
-    "৩য় বর্ষ", "তৃতীয় বর্ষ", "৩য় সিমেস্টার", "তৃতীয় সিমেস্টার",
-    "৪র্থ বর্ষ", "চতুর্থ বর্ষ", "৪র্থ সিমেস্টার", "চতুর্থ সিমেস্টার",
-    "CSE",
-    "ECE",
-    "BBA",
-    "Professional"
-]
+other_keywords = {
+    ["১ম বর্ষ", "প্রথম বর্ষ"]: "1st Year",
+    ["২য় বর্ষ", "দ্বিতীয় বর্ষ"]: "2nd Year",
+    ["৩য় বর্ষ", "তৃতীয় বর্ষ"]: "3rd Year",
+    ["৪র্থ বর্ষ", "চতুর্থ বর্ষ"]: "4th Year",
+    ["১ম সেমিস্টার", "প্রথম সেমিস্টার"]: "1st Semester",
+    ["২য় সেমিস্টার", "দ্বিতীয় সেমিস্টার"]: "2nd Semester",
+    ["৩য় সেমিস্টার", "তৃতীয় সেমিস্টার"]: "3rd Semester",
+    ["৪র্থ সেমিস্টার", "চতুর্থ সেমিস্টার"]: "4th Semester", 
+    ["CSE"]: "CSE",
+    ["ECE"]: "ECE",
+    ["BBA"]: "BBA",
+    ["Professional"]: "Professional"
+}
 
 
 # load_dotenv()
@@ -125,8 +128,10 @@ def fetch():
         reply = "<a href='" + notice_link + "'>" + notice_title + "</a>\n\n"
 
         # if notice_title contains any of the other_keywords, then add the keywords as hashtags
-        if any(keyword in notice_title for keyword in other_keywords):
-            reply += " ".join([" #" + keyword.replace(" ", "_") for keyword in other_keywords if keyword in notice_title])
+        for keywords_list, translation in other_keywords.items():
+            if any(keyword in notice_title for keyword in keywords_list):
+                reply += " #" + translation.replace(" ", "_")
+
 
         ###
         try:
@@ -134,8 +139,9 @@ def fetch():
             sent = nu_bot.sendDocument(nu_chat_id, open(filename, 'rb'), caption=reply, parse_mode='html')
 
             # if notice_title contains any of the porikkha_keywords, then pin the message
-            if any(keyword in notice_title for keyword in porikkha_keywords):
-                nu_bot.pinChatMessage(nu_chat_id, sent['message_id'])
+            for keywords_list, translation in porikkha_keywords.items():
+                if any(keyword in notice_title for keyword in keywords_list):
+                    nu_bot.pinChatMessage(nu_chat_id, sent['message_id'])
 
             try:
                 os.remove(filename)
