@@ -129,7 +129,7 @@ def fetch():
         reply = "<a href='" + notice_link + "'>" + notice_title + "</a>\n\n"
 
         # if notice_title contains any of the other_keywords, then add the keywords as hashtags
-        all_keywords  = porikkha_keywords.keys() | other_keywords.keys()
+        all_keywords  = porikkha_keywords | other_keywords
         for keywords_list, translation in all_keywords.items():
             for keyword in keywords_list:
                 if keyword in notice_title:
