@@ -29,10 +29,24 @@ other_keywords = {
     ("২য় সেমিস্টার", "দ্বিতীয় সেমিস্টার"): "2nd Semester",
     ("৩য় সেমিস্টার", "তৃতীয় সেমিস্টার"): "3rd Semester",
     ("৪র্থ সেমিস্টার", "চতুর্থ সেমিস্টার"): "4th Semester", 
-    ("CSE",): "CSE",
-    ("ECE",): "ECE",
-    ("BBA",): "BBA",
-    ("Professional",): "Professional"
+    ("CSE", "সিএসই"): "CSE",
+    ("ECE", "ইসিই"): "ECE",
+    ("BBA","বিবিএ"): "BBA",
+    ("Professional", "প্রফেশনাল"): "Professional",
+    ("MBA", "এমবিএ"): "MBA",
+    ("অনার্স", "Honours"): "Honours",
+    ("মাস্টার্স", "Masters"): "Masters",
+    ("ডিপ্লোমা", "Diploma"): "Diploma",
+    ("সার্টিফিকেট", "Certificate"): "Certificate",
+    ("বিএসসি", "BSc"): "BSc",
+    ("বিকম", "BCom"): "BCom",
+    ("বিএ", "BA"): "BA",
+    ("পোস্ট গ্র্যাজুয়েট", "Post Graduate"): "Post Graduate",
+    ("এমএ", "MA"): "MA",
+    ("এমকম", "MCom"): "MCom",
+    ("এমএসসি", "MSc"): "MSc",
+    ("বিএড", "BEd"): "BEd",
+    ("এমএড", "MEd"): "MEd",
 }
 
 
@@ -133,7 +147,7 @@ def fetch():
         for keywords_list, translation in all_keywords.items():
             for keyword in keywords_list:
                 if keyword in notice_title:
-                    reply += "#" + translation + " "
+                    reply += "#" + translation.replace(" ", "_") + " "
 
 
         ###
