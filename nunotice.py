@@ -36,6 +36,7 @@ other_keywords = {
 }
 
 
+
 # load_dotenv()
 
 # bot = telepot.Bot(os.getenv('PRODIPTO_BOT_TOKEN'))
@@ -128,9 +129,11 @@ def fetch():
         reply = "<a href='" + notice_link + "'>" + notice_title + "</a>\n\n"
 
         # if notice_title contains any of the other_keywords, then add the keywords as hashtags
-        for keywords_list, translation in other_keywords.items():
-            if any(keyword in notice_title for keyword in keywords_list):
-                reply += " #" + translation.replace(" ", "_")
+        all_keywords  = porikkha_keywords.keys() | other_keywords.keys()
+        for keywords_list, translation in all_keywords.items():
+            for keyword in keywords_list:
+                if keyword in notice_title:
+                    reply += "#" + translation + " "
 
 
         ###
