@@ -13,6 +13,26 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0'
 }
 
+porikkha_keywords = [
+    "পরীক্ষা",
+    "পরীক্ষার সময়সূচী",
+    "পরীক্ষার সময়সূচি",
+    "ফরম পূরণ",
+    "ফলাফল"
+]
+
+other_keywords = [
+    "১ম বর্ষ", "প্রথম বর্ষ", "১ম সিমেস্টার", "প্রথম সিমেস্টার",
+    "২য় বর্ষ", "দ্বিতীয় বর্ষ", "২য় সিমেস্টার", "দ্বিতীয় সিমেস্টার",
+    "৩য় বর্ষ", "তৃতীয় বর্ষ", "৩য় সিমেস্টার", "তৃতীয় সিমেস্টার",
+    "৪র্থ বর্ষ", "চতুর্থ বর্ষ", "৪র্থ সিমেস্টার", "চতুর্থ সিমেস্টার",
+    "CSE",
+    "ECE",
+    "BBA",
+    "Professional"
+]
+
+
 # load_dotenv()
 
 # bot = telepot.Bot(os.getenv('PRODIPTO_BOT_TOKEN'))
@@ -102,11 +122,21 @@ def fetch():
         reply = "Notice from NU Website: " + "<a href='" + notice_link + "'>" + notice_title + "</a>"
         print(reply)
         # bot.sendMessage(chat_id, reply, parse_mode='html')
-        reply = "<a href='" + notice_link + "'>" + notice_title + "</a>"
+        reply = "<a href='" + notice_link + "'>" + notice_title + "</a>\n\n"
+
+        # if notice_title contains any of the other_keywords, then add the keywords as hashtags
+        if any(keyword in notice_title for keyword in other_keywords):
+            reply += " ".join([" #" + keyword.replace(" ", "_") for keyword in other_keywords if keyword in notice_title])
+
         ###
         try:
             filename = download_file(notice_link)
-            nu_bot.sendDocument(nu_chat_id, open(filename, 'rb'), caption=reply, parse_mode='html')
+            sent = nu_bot.sendDocument(nu_chat_id, open(filename, 'rb'), caption=reply, parse_mode='html')
+
+            # if notice_title contains any of the porikkha_keywords, then pin the message
+            if any(keyword in notice_title for keyword in porikkha_keywords):
+                nu_bot.pinChatMessage(nu_chat_id, sent['message_id'])
+
             try:
                 os.remove(filename)
             except:
