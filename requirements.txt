@@ -28,3 +28,4 @@ urllib3
 Werkzeug
 yarl
 cloudscraper==1.2.58
+lxml[html_clean]
