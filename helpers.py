@@ -1,6 +1,9 @@
 import requests
 import os
 from bs4 import BeautifulSoup
+# imprt threapool
+from multiprocessing.pool import ThreadPool
+import traceback
 
 def check_nu_working():
     URL = f"https://hc-ping.com/{os.getenv('HC_PING_ID')}"
@@ -28,6 +31,24 @@ def get_socks5_proxy():
     print(proxies)
     return proxies
 
+# using threadpool, check if the proxies are working
+def check_proxies(proxy_arr):
+    def is_proxy_working(proxy):
+        try:
+            response = requests.get("https://httpbin.org/ip", proxies={"http": proxy, "https": proxy}, timeout=5)
+            return response.status_code == 200
+        except:
+            return False
+
+    with ThreadPool(10) as pool:
+        results = pool.map(is_proxy_working, proxy_arr)
+
+    working_proxies = [proxy for proxy, is_working in zip(proxy_arr, results) if is_working]
+    print(f"Found {len(working_proxies)} working proxies")
+    return working_proxies
+    
+
+
 def get_nu_html():
     # using the proxies, do a get request
     proxies = get_http_proxy()
@@ -41,21 +62,25 @@ def get_nu_html():
 
     retry = 0
 
+    # proxies = check_proxies(proxies)
+
     while retry <= 3:
         for i, proxy in enumerate(proxies):
             try:
                 response = requests.get("https://www.nu.ac.bd/recent-news-notice.php", headers=headers, proxies={"http": proxy, "https": proxy}, timeout=5)
                 print(response.status_code)
                 # save response to file
-                with open(f"response_{i}.html", "w") as f:
+                with open(f"response_{i}.html", "w", encoding="utf-8") as f:
                     f.write(response.text)
                 soup = BeautifulSoup(response.text, 'html.parser')
                 check_nu_working()
+                retry = 4
                 return soup
             except Exception as e:
+                print(traceback.format_exc())
                 print(f"Failed to connect using {proxy}. Error: {e}")
                 continue
         retry += 1
 
 if __name__ == "__main__":
-    check_nu_working()
+    get_nu_html()

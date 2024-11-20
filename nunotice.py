@@ -171,6 +171,6 @@ def fetch():
         time.sleep(3)
 
 if __name__ == "__main__":
-    getHtml("https://www.nu.ac.bd/recent-news-notice.php")
+    # getHtml("https://www.nu.ac.bd/recent-news-notice.php")
 
-# fetch()
+    fetch()
