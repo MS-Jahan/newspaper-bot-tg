@@ -1,5 +1,6 @@
 import requests
 import os
+from bs4 import BeautifulSoup
 
 def check_nu_working():
     URL = f"https://hc-ping.com/{os.getenv('HC_PING_ID')}"
@@ -48,7 +49,9 @@ def get_nu_html():
                 # save response to file
                 with open(f"response_{i}.html", "w") as f:
                     f.write(response.text)
-                return response.text
+                soup = BeautifulSoup(response.text, 'html.parser')
+                check_nu_working()
+                return soup
             except Exception as e:
                 print(f"Failed to connect using {proxy}. Error: {e}")
                 continue
