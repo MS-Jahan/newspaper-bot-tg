@@ -103,7 +103,7 @@ def download_file(url):
 def fetch():
     global bot, chat_id
     print("Fetching html page...")
-    html_data = get_nu_html("https://www.nu.ac.bd/recent-news-notice.php")
+    html_data = get_nu_html()
     # print(html_data)
     all_divs = html_data.find_all("div", {"class": "news-item"})
     print(len(all_divs))
