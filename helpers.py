@@ -39,7 +39,7 @@ def get_socks5_proxy():
 def check_proxies(proxy_arr):
     def is_proxy_working(proxy):
         try:
-            response = requests.get("https://www.nu.ac.bd/recent-news-notice.php", headers=headers, proxies={"http": proxy, "https": proxy}, timeout=5)
+            response = requests.head("https://www.nu.ac.bd/recent-news-notice.php", headers=headers, proxies={"http": proxy, "https": proxy}, timeout=5)
             if response.status_code == 200:
                 return response.text
         except:
@@ -48,9 +48,9 @@ def check_proxies(proxy_arr):
     with ThreadPool(20) as pool:
         results = pool.map(is_proxy_working, proxy_arr)
 
-    working_html = [result for result in results if result]
-    print(f"Found {len(working_html)} working proxies with valid HTML")
-    return working_html
+    working_proxies = [proxy for proxy, result in zip(proxy_arr, results) if result]
+    print(f"Working proxies: {len(working_proxies)}")
+    return working_proxies
     
 def get_proxyscrape_proxies():
     proxies = requests.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&country=bd&proxy_format=protocolipport&format=text").text.split("\n")
@@ -64,7 +64,6 @@ def get_nu_html():
     proxies = get_http_proxy()
     proxies += ["socks4://" + proxy for proxy in get_socks4_proxy()]
     proxies += ["socks5://" + proxy for proxy in get_socks5_proxy()]
-
     proxies += get_proxyscrape_proxies()
 
     print(f"Total {len(proxies)} proxies")
@@ -79,10 +78,11 @@ def get_nu_html():
         html = check_proxies(proxies)
         print(f"Got {len(html)} htmls")
         if len(html) > 0:
+            print(html[0])
             soup = BeautifulSoup(html[0], 'html.parser')
             return soup
         else:
             retry += 1
 
 if __name__ == "__main__":
-    get_nu_html()
+    print(get_nu_html())

@@ -152,6 +152,8 @@ def fetch():
 
         ###
         try:
+            # temp fix
+            raise Exception("Temp fix")
             filename = download_file(notice_link)
             sent = nu_bot.sendDocument(nu_chat_id, open(filename, 'rb'), caption=reply, parse_mode='html')
 
