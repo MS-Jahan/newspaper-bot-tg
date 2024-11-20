@@ -18,6 +18,7 @@ pycryptodome
 python-dotenv
 pytz
 requests
+pysocks
 requests-toolbelt
 six
 soupsieve
