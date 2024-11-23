@@ -26,7 +26,7 @@ jobs:
         env:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
         run: |
-          secrets=$(echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | .key + "=" + .value')
+          secrets=$(echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | select(.key != "WG_CONFIG_FILE") | .key + "=" + .value')
           echo "$secrets" >> $GITHUB_ENV
       - name: Run the script
         run: python main.py
