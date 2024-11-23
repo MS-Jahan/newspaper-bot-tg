@@ -26,6 +26,10 @@ jobs:
         run: |
           secrets=$(echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | .key + "=" + .value')
           echo "$secrets" >> $GITHUB_ENV
+      - name: Set up WireGuard Connection
+        uses: niklaskeerl/easy-wireguard-action@v2
+        with:
+          WG_CONFIG_FILE: ${{ secrets.WG_CONFIG_FILE }}
       - name: Run the script
         run: python main.py
         working-directory: .

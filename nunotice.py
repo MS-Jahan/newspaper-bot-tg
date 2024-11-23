@@ -10,7 +10,7 @@ from helpers import *
 
 headers = {
     'Host': 'www.nu.ac.bd',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:102.0) Gecko/20100101 Firefox/102.0'
+    "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 }
 
 porikkha_keywords = {
@@ -103,7 +103,7 @@ def download_file(url):
 def fetch():
     global bot, chat_id
     print("Fetching html page...")
-    html_data = get_nu_html()
+    html_data = getHtml("https://www.nu.ac.bd/recent-news-notice.php")
     # print(html_data)
     all_divs = html_data.find_all("div", {"class": "news-item"})
     print(len(all_divs))
@@ -153,7 +153,7 @@ def fetch():
         ###
         try:
             # temp fix
-            raise Exception("Temp fix")
+            # raise Exception("Temp fix")
             filename = download_file(notice_link)
             sent = nu_bot.sendDocument(nu_chat_id, open(filename, 'rb'), caption=reply, parse_mode='html')
 
