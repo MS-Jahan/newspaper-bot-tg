@@ -1,200 +1,112 @@
-import json, os, time, requests, traceback
+import json
+import os
+import time
+import traceback
+import codecs
 from bs4 import BeautifulSoup
-from post import postToTelegraph
 from dotenv import load_dotenv
 import telepot
-import codecs
 import cloudscraper
+from post import postToTelegraph
 
+# Load environment variables
+load_dotenv()
 
+# Constants
+HOMEPAGE = "https://www.prothomalo.com/"
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+SAVED_URLS_PATH = os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt')
 
-# print(os.path.isfile(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt')))
+# Initialize bot
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHAT_ID = os.getenv('CHAT_ID')
+if not BOT_TOKEN or not CHAT_ID:
+    raise ValueError("BOT_TOKEN or CHAT_ID is not set in the environment variables.")
 
-def check():    
-    # load_dotenv()
-    HOMEPAGE = "https://www.prothomalo.com/"
+bot = telepot.Bot(BOT_TOKEN)
 
+# Helper Functions
+def get_html(url):
+    scraper = cloudscraper.create_scraper()
+    response = scraper.get(url)
+    return BeautifulSoup(response.text, 'html.parser')
 
-    bot = telepot.Bot(os.getenv('BOT_TOKEN'))
-    chat_id = os.getenv('CHAT_ID')
-
-    def getHtml(url):
-        # r = requests.get(url)
-        scraper = cloudscraper.create_scraper()
-        r = scraper.get(url)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        return soup
-
-    # print(soup.title.text)
-
-    data = getHtml(HOMEPAGE).find(id="static-page").string
-
-    # print(data)
-
-    # with open("homepage_sample.json", "r") as f:
-    #     data = f.read()
-
-    data = json.loads(data)
-    main = data["qt"]["data"]["collection"]["items"]
-
-
-    data_arr = []
-
-
-    for ii in main:
-        first_items = ii["items"]
-        for jj in first_items:
-            try:
-                temp = {}
-                
-                temp["slug"] = jj["story"]["url"]
-                temp["author-name"] = jj["story"]["author-name"]
-                temp["headline"] = jj["story"]["headline"]
-                try:
-                    v = jj["story"]["alternative"]["home"]["default"]["hero-image"]["hero-image-s3-key"]
-                except:
-                    v = "-"
-                temp["image"] = v
-
-                data_arr.append(temp)
-            except:
-                pass
-
-
-    prev_slugs = []
-
-    print(os.path.isdir(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt')))
-
+def load_previous_slugs():
     try:
-        with open(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt'), 'r') as my_file:
-            prev_slugs = my_file.read().splitlines()
+        with open(SAVED_URLS_PATH, 'r', encoding='utf-8') as file:
+            return file.read().splitlines()
+    except FileNotFoundError:
+        return []
     except UnicodeDecodeError:
-        try:
-            print(str(traceback.format_exc()))
-            with codecs.open(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt'), 'r', 'utf8' ) as my_file:
-                prev_slugs = my_file.read().splitlines()
-        except:
-            print("removing last line from file...")
-            os.system("sed -i '$ d' newspaper-bot-urls/saved-urls.txt")
-            with open(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt'), 'r') as my_file:
-                prev_slugs = my_file.read().splitlines()
-    
-    if len(prev_slugs) > 1:
+        with codecs.open(SAVED_URLS_PATH, 'r', 'utf-8') as file:
+            return file.read().splitlines()
 
-        if len(prev_slugs) > 1000:
-            prev_slugs = prev_slugs[100:]
-            with open(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt'), 'w') as f:
-                for item in prev_slugs:
-                    f.write("%s\n" % item)
+def save_slugs(slugs):
+    with open(SAVED_URLS_PATH, 'w', encoding='utf-8') as file:
+        file.write("\n".join(slugs))
 
-        # print(prev_slugs)
+def append_slugs(slugs):
+    with open(SAVED_URLS_PATH, 'a', encoding='utf-8') as file:
+        for slug in slugs:
+            file.write(f"{slug}\n")
 
-        # prev_slugs = list(dict.fromkeys(prev_slugs))
+def fetch_article_data(slug):
+    page = get_html(slug)
+    script_data = page.find_all('script')
+    try:
+        article_json = json.loads(script_data[2].string)
+        article_body = article_json["articleBody"].replace("&lt;", "<").replace("&gt;", ">")
+        image_url = article_json.get("hero-image-s3-key", "-")
+        if 'https://images.prothomalo.com/' not in image_url:
+            image_url = f"https://images.prothomalo.com/{image_url}"
+        return article_body, image_url
+    except Exception as e:
+        raise ValueError(f"Error fetching article data: {e}")
 
-        new_data_arr = []
+# Main Function
+def check_and_notify():
+    data = json.loads(get_html(HOMEPAGE).find(id="static-page").string)
+    articles = data["qt"]["data"]["collection"]["items"]
 
-        for item in data_arr:
-            if item not in new_data_arr:
-                new_data_arr.append(item)
-
-
-
-        # for i in range(len(new_data_arr)):
-        #     # print(new_data_arr[i]["slug"])
-        #     try:
-        #         if new_data_arr[i]["slug"] in prev_slugs:
-        #             new_data_arr.pop(i)
-        #             print("\ndeleted --> " + str(new_data_arr[i]))
-        #     except IndexError:
-        #         break
-
-        i = -1
-        arr_length = len(new_data_arr)
-
-        while i < arr_length-1:
-            i += 1
+    # Extract article details
+    new_articles = []
+    for category in articles:
+        for item in category.get("items", []):
             try:
-                if new_data_arr[i]["slug"] in prev_slugs:
-                    new_data_arr.pop(i)
-                    # print("\ndeleted --> " + str(new_data_arr[i]))
-                    i -= 1
-                    arr_length = len(new_data_arr)
-            except IndexError:
-                # print("breaked --> index error")
-                break
+                story = item["story"]
+                new_articles.append({
+                    "slug": story["url"],
+                    "author": story["author-name"],
+                    "headline": story["headline"],
+                    "image": story.get("alternative", {}).get("home", {}).get("default", {}).get("hero-image", {}).get("hero-image-s3-key", "-")
+                })
+            except KeyError:
+                continue
 
-        with open(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt'), 'a+') as f:
-            for item in new_data_arr:
-                f.write("%s\n" % item["slug"])
+    previous_slugs = load_previous_slugs()
 
-        print(len(new_data_arr))
+    # Filter new articles
+    filtered_articles = [article for article in new_articles if article["slug"] not in previous_slugs]
 
-        print("\n\n")
+    if filtered_articles:
+        append_slugs([article["slug"] for article in filtered_articles])
 
-        
-        # for i in prev_slugs:
-        #     print(i)
-        #     # print("\n")
-        # print('\n')
-        # for i in new_data_arr:
-        #     print(i['slug'])
+        for article in filtered_articles:
+            try:
+                if any(ignored in article["slug"] for ignored in ["photo/", "entertainment/", "video/"]):
+                    continue
 
+                article_body, image_url = fetch_article_data(article["slug"])
+                telegraph_link = postToTelegraph(article["headline"], article["author"], image_url, article_body, article["slug"])
 
-        # if(len(new_data_arr) > 0):
-        #     fileD = m.find('saved-urls.txt')
-        #     m.delete(fileD[0])
-        #     print("Deleted")
-        #     fileD = m.upload(os.path.join(__location__, 'newspaper-bot-urls/saved-urls.txt'))
-        #     print("Uploaded")
-
-        i = 0
-
-        for item in new_data_arr:
-            print(item["slug"])
-            i += 1
-            if "photo/" in item["slug"]:
-                pass
-            elif "entertainment/" in item["slug"]:
-                pass
-            elif "video/" in item["slug"]:
-                pass
-            else:
-                try:
-                    main = getHtml(item["slug"])
-                    scripts = main.find_all('script')
-
-                    try:
-                        article = json.loads(scripts[2].string)
-                    except:
-                        article = json.loads(str(scripts[2].string))
-
-                    article = article["articleBody"]
-                    article = article.replace("&lt;", "<")
-                    article = article.replace("&gt;", ">")
-                    if item["image"] == '-':
-                        item["image"] = main.find("meta",  property="og:image").attrs['content']
-                    
-                    if 'https://images.prothomalo.com/' not in item["image"]:
-                        item["image"] = "https://images.prothomalo.com/" + item["image"]
-
-                    print(item["headline"])
-                    print(item["author-name"])
-                    print(item["image"])
-                    # print(article)
-                    print(HOMEPAGE + item["slug"])
-                    iv_link = postToTelegraph(item["headline"], item["author-name"], item["image"], article, item["slug"])
-                    # iv_link = json.loads(iv_link)
-                    print(iv_link)
-                    print('\n')
-
-                    text = "<a href='" + iv_link["url"] + "'>" + item["headline"] + " - প্রথম আলো" + "</a>"
-                    bot.sendMessage(chat_id, text, parse_mode='html')
-                except:
-                    print(traceback.format_exc())
+                message = f"<a href='{telegraph_link["url"]}'>{article["headline"]} - প্রথম আলো</a>"
+                bot.sendMessage(CHAT_ID, message, parse_mode='html')
 
                 time.sleep(15)
+            except Exception:
+                print(traceback.format_exc())
     else:
-        print("File wasn't read!")
+        print("No new articles to process.")
 
-# check() # ---
+if __name__ == "__main__":
+    check_and_notify()

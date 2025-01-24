@@ -1,116 +1,121 @@
-import json, requests, time, os, traceback
+import os
+import json
+import traceback
+import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import telepot
-import codecs
 from post import postToTelegraph
 
+# Constants
+BASE_URL = "https://www.kalerkantho.com"
+TECHNEWS_URL = f"{BASE_URL}/online/info-tech"
+SAVED_URLS_FILE_NAME = "newspaper-bot-urls/kk-science-saved-urls.txt"
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
 
-TECHNEWS_URL = "https://www.kalerkantho.com/online/info-tech"
-SAVED_URLS_FILE_NAME = "newspaper-bot-urls/kk-science-saved-urls.txt"
+# Utility Functions
+def get_html(url):
+    """Fetches and parses the HTML content of a given URL."""
+    response = requests.get(url)
+    response.raise_for_status()
+    return BeautifulSoup(response.text, 'html.parser')
 
-print(os.path.join(__location__, SAVED_URLS_FILE_NAME))
+def load_saved_urls(file_path):
+    """Loads previously saved URLs from a file."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return file.read().splitlines()
+    except (UnicodeDecodeError, FileNotFoundError):
+        print("Error reading saved URLs file. Attempting fallback handling.")
+        try:
+            with open(file_path, 'r', encoding='latin-1') as file:
+                return file.read().splitlines()
+        except Exception as e:
+            print(f"Failed to read saved URLs file: {e}")
+            return []
 
-def getHtml(url):
-    r = requests.get(url)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    return soup
+def save_urls(file_path, urls):
+    """Saves a list of URLs to a file."""
+    with open(file_path, 'w', encoding='utf-8') as file:
+        for url in urls:
+            file.write(f"{url}\n")
 
-def check():
-    global TECHNEWS_URL, SAVED_URLS_FILE_NAME
-    # load_dotenv()
+def append_urls(file_path, urls):
+    """Appends new URLs to the saved file."""
+    with open(file_path, 'a', encoding='utf-8') as file:
+        for url in urls:
+            file.write(f"{url}\n")
 
-    bot = telepot.Bot(os.getenv('BOT_TOKEN')) # Telegram Bot Token 
+def clean_article_text(article_text):
+    """Cleans and formats the article text."""
+    return (
+        article_text
+        .replace("\u0026amp;", "&")
+        .replace("nbsp;", " ")
+        .replace("\u0026lt;/p\u0026gt;", "</p>")
+        .replace("\u0026lt;p\u0026gt;", "<p>")
+    )
+
+# Main Function
+def check_tech_news():
+    load_dotenv()
+
+    bot = telepot.Bot(os.getenv('BOT_TOKEN'))
     chat_id = os.getenv('SCIENCE_CHAT_ID')
+    saved_urls_file_path = os.path.join(__location__, SAVED_URLS_FILE_NAME)
 
-
-    print(TECHNEWS_URL, SAVED_URLS_FILE_NAME)
-
-    i = 1
-    prev_urls = []
+    prev_urls = load_saved_urls(saved_urls_file_path)
     new_urls = []
     new_titles = []
 
-    print(os.path.join(__location__, SAVED_URLS_FILE_NAME))
-
-    try:
-        with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'r') as my_file:
-            prev_urls = my_file.read().splitlines()
-    except UnicodeDecodeError:
+    if prev_urls:
         try:
-            print(str(traceback.format_exc()))
-            with codecs.open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'r', 'utf8' ) as my_file:
-                prev_urls = my_file.read().splitlines()
-        except:
-            print("removing last line from file...")
-            os.system("sed -i '$ d' newspaper-bot-urls/kk-science-saved-urls.txt")
-            with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'r') as my_file:
-                prev_urls = my_file.read().splitlines()
+            soup = get_html(TECHNEWS_URL)
+            links = soup.find_all("a")
 
-    if len(prev_urls) > 1:
-        data = getHtml(TECHNEWS_URL)
-        # data = data.find("div", {"class": "print_edition_left"})
-        data = data.find_all("a")
+            for element in links:
+                href = element.get("href", "")
+                if len(href) > 24 and "/online/info-tech/" in href:
+                    full_url = f"{BASE_URL}{href}"
+                    if full_url not in prev_urls:
+                        try:
+                            title_text = element.find("h4").text
+                            new_urls.append(full_url)
+                            new_titles.append(title_text)
+                        except AttributeError:
+                            print("Invalid link format.")
 
-        print(len(data))
+            # Trim saved URLs if necessary
+            if len(prev_urls) > 300:
+                prev_urls = prev_urls[60:]
+                save_urls(saved_urls_file_path, prev_urls)
 
-        for element in data:
-            if len(element["href"]) > 24:
-                got_url = "https://www.kalerkantho.com" + element["href"]
-                if got_url not in prev_urls and "/online/info-tech/" in got_url:
-                    new_urls.append(got_url)
-                    print(got_url)
+            # Process new URLs
+            for i, link in enumerate(new_urls):
+                if link not in prev_urls:
                     try:
-                        title_text = element.find("h4").text
-                        new_titles.append(title_text)
-                    except:
-                        print("Bogus Link\n")
-                        del new_urls[-1]
-        
-        # print(prev_urls)
-        print("\n\n")
-        # print(new_urls)
+                        webpage = get_html(link)
+                        image = webpage.find("meta", property="og:image").get("content")
+                        headline = webpage.find("title").text
+                        json_data = json.loads(webpage.find("script", {"id": "__NEXT_DATA__"}).text)
+                        author_name = json_data["props"]["pageProps"]["details"]["n_author"]
+                        article = clean_article_text(json_data["props"]["pageProps"]["details"]["n_details"])
 
-        print(len(new_urls))
+                        iv_link = postToTelegraph(headline, author_name, image, article, link)
 
-        if len(prev_urls) > 300:
-            prev_urls = prev_urls[60:]
-            with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'w') as f:
-                for item in prev_urls:
-                    f.write("%s\n" % item)
-        
-        for i, link in enumerate(new_urls):
-            if link not in prev_urls:
-                print(link)
+                        text = f"<a href='{iv_link['url']}'>{headline} - কালের কণ্ঠ</a>"
+                        bot.sendMessage(chat_id, text, parse_mode='html')
+                    except Exception as e:
+                        print(f"Error processing link {link}: {traceback.format_exc()}")
 
-                try:
-                    webpage = getHtml(link)                    
-                    image = webpage.find("meta",  property="og:image").attrs['content']
-                    headline = webpage.find("title").text
-                    json_data = json.loads(webpage.find("script", {"id": "__NEXT_DATA__"}).text)
-                    authorName = json_data["props"]["pageProps"]["details"]["n_author"]
-                    article = json_data["props"]["pageProps"]["details"]["n_details"] \
-                    .replace("\u0026amp;", "").replace("nbsp;", "").replace("\u0026lt;/p\u0026gt;", "</p>").replace("\u0026lt;p\u0026gt;", "<p>")
+            # Save new URLs
+            if new_urls:
+                append_urls(saved_urls_file_path, new_urls)
 
-                    print(article)
-
-                    iv_link = postToTelegraph(headline, authorName, image, article, link)
-
-                    text = "<a href='" + iv_link["url"] + "'>" + headline + " - কালের কণ্ঠ" + "</a>"
-                    bot.sendMessage(chat_id, text, parse_mode='html')
-                except:
-                    print(traceback.format_exc())
-                    print("\n\ncouldn't --> " + link + "\n\n")
-                break
-
-        if len(new_urls) > 0:
-            with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'a+') as f:
-                for link in new_urls:
-                    f.write("%s\n" % link)
-
+        except Exception as e:
+            print(f"Failed to fetch or process tech news: {traceback.format_exc()}")
     else:
-        print("File wasn't read!")
+        print("No saved URLs found or failed to load.")
 
 if __name__ == "__main__":
-    check()
+    check_tech_news()

@@ -1,156 +1,131 @@
-import json, requests, time, os, traceback
-from bs4 import BeautifulSoup
-from post import postToTelegraph
-from dotenv import load_dotenv
-import telepot
-import codecs
-import cloudscraper
+import os
 import json
-from pprint import pprint
+import time
+import traceback
+import codecs
+from dotenv import load_dotenv
+from bs4 import BeautifulSoup
+import telepot
+import cloudscraper
+from post import postToTelegraph
 
+# Load environment variables
+load_dotenv()
 
+# Constants
 __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+URLS_FILE = os.path.join(__location__, 'newspaper-bot-urls/pa-science-saved-urls.txt')
+HOMEPAGES = [
+    "https://www.prothomalo.com/technology",
+    "https://www.prothomalo.com/education/science-tech"
+]
 
-# load_dotenv()
+# Initialize bot
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHAT_ID = os.getenv('SCIENCE_CHAT_ID')
+ERROR_MESSAGE_CHAT_ID = os.getenv('ERROR_MESSAGE_CHAT_ID')
+bot = telepot.Bot(BOT_TOKEN)
 
-def getHtml(url):
-    # r = requests.get(url)
+def get_html(url):
+    """Fetch and parse HTML from a URL using cloudscraper."""
     scraper = cloudscraper.create_scraper()
-    r = scraper.get(url)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    return soup
+    response = scraper.get(url)
+    return BeautifulSoup(response.text, 'html.parser')
 
-def check():
-    # load_dotenv()
+def load_previous_urls():
+    """Load previously processed URLs from file."""
+    try:
+        with open(URLS_FILE, 'r') as file:
+            return file.read().splitlines()
+    except UnicodeDecodeError:
+        with codecs.open(URLS_FILE, 'r', 'utf8') as file:
+            return file.read().splitlines()
+    except FileNotFoundError:
+        return []
 
-    bot = telepot.Bot(os.getenv('BOT_TOKEN')) # Telegram Bot Token 
-    chat_id = os.getenv('SCIENCE_CHAT_ID')
-    error_message_chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
+def save_urls(urls):
+    """Save a list of URLs to file."""
+    with open(URLS_FILE, 'w') as file:
+        for url in urls:
+            file.write(f"{url}\n")
 
-    HOMEPAGES = ["https://www.prothomalo.com/technology", "https://www.prothomalo.com/education/science-tech"]
+def append_new_urls(urls):
+    """Append new URLs to the file."""
+    with open(URLS_FILE, 'a+') as file:
+        for url in urls:
+            file.write(f"{url}\n")
 
-    i = 1
-    prev_urls = []
+def process_article(article):
+    """Extract article details and post to Telegram."""
+    headline = article.get("headline")
+    author_name = article.get("author-name", "-")
+    url = article.get("url")
+
+    if not url:
+        return None
+
+    page_content = get_html(url)
+    scripts = page_content.find_all('script', {"type": "application/ld+json"})
+
+    for script in scripts:
+        try:
+            data = json.loads(script.string)
+            article_body = data.get("articleBody", "")
+        except (json.JSONDecodeError, AttributeError):
+            continue
+
+    article_body = article_body.replace("&lt;", "<").replace("&gt;", ">")
+    image_url = page_content.find("meta", property="og:image").get("content", "")
+
+    telegraph_response = postToTelegraph(headline, author_name, image_url, article_body, url)
+    telegraph_url = telegraph_response.get("url")
+
+    if telegraph_url:
+        text = f"<a href='{telegraph_url}'>{headline} - প্রথম আলো</a>"
+        bot.sendMessage(CHAT_ID, text, parse_mode='html')
+
+    return url
+
+def process_homepage(homepage, prev_urls):
+    """Process articles from a homepage."""
     new_urls = []
+    html_soup = get_html(homepage)
 
     try:
-        with open(os.path.join(__location__, 'newspaper-bot-urls/pa-science-saved-urls.txt'), 'r') as my_file:
-            prev_urls = my_file.read().splitlines()
-    except UnicodeDecodeError:
-        try:
-            print(str(traceback.format_exc()))
-            with codecs.open(os.path.join(__location__, 'newspaper-bot-urls/pa-science-saved-urls.txt'), 'r', 'utf8' ) as my_file:
-                prev_urls = my_file.read().splitlines()
-        except:
-            print("removing last line from file...")
-            os.system("sed -i '$ d' newspaper-bot-urls/pa-science-saved-urls.txt")
-            with open(os.path.join(__location__, 'newspaper-bot-urls/pa-science-saved-urls.txt'), 'r') as my_file:
-                prev_urls = my_file.read().splitlines()
+        data = json.loads(html_soup.find(id="static-page").string)
+        articles = data["qt"]["data"]["collection"]["items"]
+    except (AttributeError, json.JSONDecodeError):
+        bot.sendDocument(ERROR_MESSAGE_CHAT_ID, open("science_page_sample.html", "rb"), caption="Error parsing homepage data.")
+        return []
 
-    if len(prev_urls) > 1:
-        if len(prev_urls) > 300:
-            prev_urls = prev_urls[60:]
-            with open(os.path.join(__location__, 'newspaper-bot-urls/pa-science-saved-urls.txt'), 'w') as f:
-                for item in prev_urls:
-                    f.write("%s\n" % item)
+    for article in articles:
+        story = article.get("story") or {}
+        url = process_article(story)
 
-        for pages in HOMEPAGES:
-            # print(getHtml(pages))
-            htmlsoup = getHtml(pages)
+        if url and url not in prev_urls:
+            new_urls.append(url)
 
-            # dump to file
-            with open("science_page_sample.html", "w") as f:
-                f.write(str(htmlsoup))
+    return new_urls
 
-            # send file to telegram
-            bot.sendDocument(error_message_chat_id, open("science_page_sample.html", "rb"), caption="Science page sample (from Github Actions)")
-            
-            data = htmlsoup.find(id="static-page").string
+def main():
+    prev_urls = load_previous_urls()
 
-            # print(data)
-            data = json.loads(data)
-            main = data["qt"]["data"]["collection"]["items"]
+    if len(prev_urls) > 300:
+        prev_urls = prev_urls[-240:]  # Keep only the latest 240 entries
+        save_urls(prev_urls)
 
-            with open("main.json", "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=4)
+    all_new_urls = []
 
-            # exit()
+    for homepage in HOMEPAGES:
+        new_urls = process_homepage(homepage, prev_urls)
+        all_new_urls.extend(new_urls)
+        time.sleep(10)
 
-            print(len(main))
-
-            retry = 0
-
-            for index, items1 in enumerate(main):
-                if index == 0:
-                    continue
-                try:
-                    if "items" in items1:
-                        sub_items = items1["items"]
-                    else:
-                        sub_items = [items1]
-                        
-                    for items2 in sub_items:
-                        item = items2
-                        with open("test.json", "w", encoding="utf-8") as f:
-                            json.dump(items2, f, indent=4)
-
-                        sub_main = item.get("story")
-                        if sub_main is None:
-                            continue
-                        
-                        headline = sub_main.get("headline")
-                        authorName = sub_main.get("author-name", "-")
-                        url = sub_main.get("url")
-
-                        if url not in prev_urls:
-                            print(url)
-                            main = getHtml(url)
-                            scripts = main.find_all('script', {"type": "application/ld+json"}) 
-
-                            for sc in scripts:
-                                try:
-                                    article = json.loads(str(sc.string))
-                                    article = article["articleBody"]
-                                except:
-                                    continue
-                            
-                            try:
-                                article = article.replace("&lt;", "<")
-                                article = article.replace("&gt;", ">")
-                                
-                                image = main.find("meta",  property="og:image").attrs['content']
-
-                                print(str(i) + " - " + headline)
-                                print(url)
-                                print(image)
-                                # print(article)
-                                # print("\n")
-                                if url in prev_urls:
-                                    continue
-                                
-                                prev_urls.append(url)
-                                new_urls.append(url)
-                                iv_link = postToTelegraph(headline, authorName, image, article, url)
-
-                                text = "<a href='" + iv_link["url"] + "'>" + headline + " - প্রথম আলো" + "</a>"
-                                bot.sendMessage(chat_id, text, parse_mode='html')
-                            except:
-                                print(traceback.format_exc())
-                                print("\n\ncouldn't --> " + url + "\n\n")
-                            
-                            time.sleep(10)
-                except:
-                    print(traceback.format_exc())
-                    break
-
-        print(len(new_urls))
-        if len(new_urls) > 0:
-            with open(os.path.join(__location__, 'newspaper-bot-urls/pa-science-saved-urls.txt'), 'a+') as f:
-                for item in new_urls:
-                    f.write("%s\n" % item)
-
-    else:
-        print("File wasn't read!")
+    if all_new_urls:
+        append_new_urls(all_new_urls)
 
 if __name__ == "__main__":
-    check()
+    try:
+        main()
+    except Exception as e:
+        bot.sendMessage(ERROR_MESSAGE_CHAT_ID, f"Error: {str(e)}")

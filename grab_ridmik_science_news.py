@@ -1,122 +1,117 @@
-import json, os, time, requests, traceback
+import json
+import os
+import time
+import traceback
 from bs4 import BeautifulSoup
-from post import postToTelegraph
 from dotenv import load_dotenv
 import telepot
-import codecs
 import cloudscraper
-from dotenv import load_dotenv
 
-# load_dotenv()
+# Load environment variables
+load_dotenv()
 
-__location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-bot = telepot.Bot(os.getenv('BOT_TOKEN'))
-chat_id = os.getenv('SCIENCE_CHAT_ID')
-error_message_chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
-SAVED_URLS_FILE_NAME = "newspaper-bot-urls/ridmik-science-saved-urls.txt"
-current_year = str(time.strftime("%Y"))
-prev_urls = []
+# Constants
+BOT_TOKEN = os.getenv('BOT_TOKEN')
+CHAT_ID = os.getenv('SCIENCE_CHAT_ID')
+ERROR_CHAT_ID = os.getenv('ERROR_MESSAGE_CHAT_ID')
+SAVED_URLS_FILE = "newspaper-bot-urls/ridmik-science-saved-urls.txt"
+HOMEPAGE_URL = "https://ridmik.news/topic/12/technology"
+URL_LIMIT = 300
+URL_TRIM_COUNT = 60
+SEND_DELAY = 5
 
-def getHtml(url):
-    # r = requests.get(url)
+# Initialize Telegram bot
+bot = telepot.Bot(BOT_TOKEN)
+
+# Utility functions
+def get_html(url):
     scraper = cloudscraper.create_scraper()
-    r = scraper.get(url)
-    soup = BeautifulSoup(r.text, 'html.parser')
-    return soup
+    response = scraper.get(url)
+    return BeautifulSoup(response.text, 'html.parser')
 
-def check():
-    if os.path.exists(os.path.join(__location__, SAVED_URLS_FILE_NAME)) == False:
-        with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'w') as f:
-            f.write("")
-            
+def load_saved_urls(filepath):
+    if not os.path.exists(filepath):
+        open(filepath, 'w').close()
     try:
-        with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'r') as my_file:
-            prev_urls = my_file.read().splitlines()
+        with open(filepath, 'r', encoding='utf-8') as file:
+            return file.read().splitlines()
     except UnicodeDecodeError:
-        try:
-            print(str(traceback.format_exc()))
-            with codecs.open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'r', 'utf8' ) as my_file:
-                prev_urls = my_file.read().splitlines()
-        except:
-            print("removing last line from file...")
-            os.system("sed -i '$ d' " + SAVED_URLS_FILE_NAME)
-            with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'r') as my_file:
-                prev_urls = my_file.read().splitlines()
+        print(traceback.format_exc())
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as file:
+            return file.read().splitlines()
 
-    if len(prev_urls) > 300:
-        prev_urls = prev_urls[60:]
-        with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'w') as f:
-            for item in prev_urls:
-                f.write("%s\n" % item)
+def save_urls(filepath, urls):
+    with open(filepath, 'a', encoding='utf-8') as file:
+        for url in urls:
+            file.write(f"{url}\n")
 
-    def nl():
-        showNl = False
-        if showNl == True:
-            print('\n')
+def trim_urls(filepath, urls):
+    if len(urls) > URL_LIMIT:
+        trimmed_urls = urls[URL_TRIM_COUNT:]
+        with open(filepath, 'w', encoding='utf-8') as file:
+            file.writelines(f"{url}\n" for url in trimmed_urls)
+        return trimmed_urls
+    return urls
 
-    def debug(tag=None, msg=None):
-        showMsg = False
-        if showMsg == True:
-            if tag is not None:
-                print(tag)
-            if msg is not None:
-                print(msg)
-
-    def getHtml(url):
-        # r = requests.get(url)
-        scraper = cloudscraper.create_scraper()
-        r = scraper.get(url)
-        soup = BeautifulSoup(r.text, 'html.parser')
-        return soup
-
-    HOMEPAGES = ["https://ridmik.news/topic/12/technology"]
-
-    post_links = []
-    post_titles = []                     # Actual post urls
-
-
-    webpage = getHtml(HOMEPAGES[0])
+def fetch_articles(homepage_url):
+    webpage = get_html(homepage_url)
     json_data = json.loads(webpage.find("script", {"id": "__NEXT_DATA__"}).text)
+
+    articles = []
     try:
-        for article in json_data["props"]["pageProps"]["articles"]:
-            post_links.append("https://ridmik.news/article/" + article["aid"] + "/" + article["title"].replace(" ", "-"))
-            post_titles.append(article["title"])
-    except:
+        articles += [
+            {
+                "link": f"https://ridmik.news/article/{article['aid']}/{article['title'].replace(' ', '-')}",
+                "title": article['title'],
+            }
+            for article in json_data["props"]["pageProps"].get("articles", [])
+        ]
+    except Exception:
         print(traceback.format_exc())
-    
 
     try:
-        home_articles = json_data["props"]["pageProps"]["homeArticles"]
-        for key, value in home_articles.items():
-            post_links.append("https://ridmik.news/article/" + value["aid"] + "/" + value["title"].replace(" ", "-"))
-            post_titles.append(value["title"])
-    except:
+        home_articles = json_data["props"]["pageProps"].get("homeArticles", {})
+        articles += [
+            {
+                "link": f"https://ridmik.news/article/{value['aid']}/{value['title'].replace(' ', '-')}",
+                "title": value['title'],
+            }
+            for value in home_articles.values()
+        ]
+    except Exception:
         print(traceback.format_exc())
-    
 
-    print(len(post_links))
-    # for i in post_links:
-    #     print(i)
+    return articles
 
+def send_to_telegram(articles, prev_urls):
     new_urls = []
-    # Send to Telegram
-    i = 1
-    for index, link in enumerate(post_links):
+    for index, article in enumerate(articles):
+        link = article['link']
+        title = article['title']
         if link not in prev_urls:
             try:
-                print(str(i) + ". Sending link: ", link)
-                text = "<a href='" + "https://t.me/iv?url=" + link + "&rhash=e70d349033f6bb" + "'>" + post_titles[index] + " - Ridmik News" + "</a>"
-                bot.sendMessage(chat_id, text, parse_mode='html')
+                print(f"Sending link {index + 1}: {link}")
+                text = (
+                    f"<a href='https://t.me/iv?url={link}&rhash=e70d349033f6bb'>"
+                    f"{title} - Ridmik News</a>"
+                )
+                bot.sendMessage(CHAT_ID, text, parse_mode='html')
                 new_urls.append(link)
-                time.sleep(5)
-                i += 1
-            except:
+                time.sleep(SEND_DELAY)
+            except Exception:
                 print(traceback.format_exc())
+    return new_urls
 
-    # Add post urls to file
-    with open(os.path.join(__location__, SAVED_URLS_FILE_NAME), 'a+') as f:
-        for link in new_urls:
-            f.write("%s\n" % link)
+# Main function
+def main():
+    saved_urls_path = os.path.join(os.getcwd(), SAVED_URLS_FILE)
+    prev_urls = load_saved_urls(saved_urls_path)
+    prev_urls = trim_urls(saved_urls_path, prev_urls)
+
+    articles = fetch_articles(HOMEPAGE_URL)
+    new_urls = send_to_telegram(articles, prev_urls)
+
+    save_urls(saved_urls_path, new_urls)
 
 if __name__ == "__main__":
-    check()
+    main()
