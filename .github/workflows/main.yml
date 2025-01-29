@@ -26,6 +26,13 @@ jobs:
         run: |
           secrets=$(echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | select(.key != "WG_CONFIG_FILE") | .key + "=" + .value')
           echo "$secrets" >> $GITHUB_ENV
+      - name: Start SSH via tmate
+        uses: P3TERX/ssh2actions@main
+        # Send connection info to Telegram (optional)
+        # You can find related documents here: https://core.telegram.org/bots
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.ERROR_MESSAGE_CHAT_ID }}
       - name: Set up WireGuard Connection
         uses: niklaskeerl/easy-wireguard-action@v2
         with:
