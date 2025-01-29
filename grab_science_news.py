@@ -61,6 +61,8 @@ def process_article(article):
     author_name = article.get("author-name", "-")
     url = article.get("url")
 
+    print("url: ", url)
+
     if not url:
         return None
 
@@ -77,8 +79,12 @@ def process_article(article):
     article_body = article_body.replace("&lt;", "<").replace("&gt;", ">")
     image_url = page_content.find("meta", property="og:image").get("content", "")
 
+    # print(headline, author_name, image_url, article_body, url)
+
     telegraph_response = postToTelegraph(headline, author_name, image_url, article_body, url)
     telegraph_url = telegraph_response.get("url")
+
+    print(telegraph_url)
 
     if telegraph_url:
         text = f"<a href='{telegraph_url}'>{headline} - প্রথম আলো</a>"
@@ -99,6 +105,7 @@ def process_homepage(homepage, prev_urls):
         return []
 
     for article in articles:
+        time.sleep(2)
         story = article.get("story") or {}
         url = process_article(story)
 

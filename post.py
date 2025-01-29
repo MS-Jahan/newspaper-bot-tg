@@ -5,35 +5,41 @@ import os
 from datetime import datetime
 import pytz, traceback, requests
 
-# load_dotenv()
+load_dotenv()
 
 
 
 # print(os.getenv('TELEGRAPH_ACCESS_TOKEN'))
-def postToTelegraph(postTitle, authorName, imgUrl, postHtml, actual_article_url):
+def postToTelegraph(postTitle, authorName, sourceImageUrl, postHtml, actual_article_url):
     t = TelegraphPoster(access_token=os.getenv('TELEGRAPH_ACCESS_TOKEN'))
     __location__ = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
-    response = requests.get(imgUrl)
-    if response.status_code == 200:
-        with open(os.path.join(__location__, 'file_img.jpg'), 'wb') as f:
-            f.write(response.content)
+    # response = requests.get(sourceImageUrl)
+    # imgUrl = "-"
+    # if response.status_code == 200:
+    #     with open(os.path.join(__location__, 'file_img.jpg'), 'wb') as f:
+    #         f.write(response.content)
 
-        try:
-            imgUrl = upload_image(os.path.join(__location__, 'file_img.jpg'))
-        except:
-            print(traceback.format_exc())
-            # imgUrl = "-"
-    else:
-        print("error - " + str(response.status_code))
+    #     try:
+    #         print(os.path.join(__location__, 'file_img.jpg'))
+    #         imgUrl = upload_image('./file_img.jpg')
+    #         # imgUrl = upload_image(imgUrl)
+    #     except:
+    #         print(traceback.format_exc())
+    #         imgUrl = "-"
+    # else:
+    #     print("error - " + str(response.status_code))
 
-    print("image from telegraph: " + imgUrl)
+    # if imgUrl.strip().endswith("-"):
+    #     imgUrl = sourceImageUrl
+
+    # print("image from telegraph: " + imgUrl)
     
     UTC = pytz.utc
     timeZ_Dhaka = pytz.timezone('Asia/Dhaka')
     bdTime = datetime.now(timeZ_Dhaka)
     
 
-    postUrl = t.post(title=postTitle, author=authorName, text="<img src='" + imgUrl + "'/>" + postHtml + "<br/><br/><a href='" + actual_article_url + "'>Goto Actual News Page</a><p>Scrape Time: " + str(bdTime) + "</p>")
+    postUrl = t.post(title=postTitle, author=authorName, text="<img src='" + sourceImageUrl + "'/>" + postHtml + "<br/><br/><a href='" + actual_article_url + "'>Goto Actual News Page</a><p>Scrape Time: " + str(bdTime) + "</p>")
     
     return postUrl
 

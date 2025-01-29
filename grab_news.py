@@ -99,7 +99,7 @@ def check_and_notify():
                 article_body, image_url = fetch_article_data(article["slug"])
                 telegraph_link = postToTelegraph(article["headline"], article["author"], image_url, article_body, article["slug"])
 
-                message = f"<a href='{telegraph_link["url"]}'>{article["headline"]} - প্রথম আলো</a>"
+                message = f"<a href='{telegraph_link['url']}'>{article['headline']} - প্রথম আলো</a>"
                 bot.sendMessage(CHAT_ID, message, parse_mode='html')
 
                 time.sleep(15)

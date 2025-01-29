@@ -46,12 +46,12 @@ def run_function(func):
         bot.sendMessage(chat_id, str(traceback.format_exc()))
 
 
-THREADS.append(Thread(target=run_function, args=(nunotice.fetch,)))
-THREADS.append(Thread(target=run_function, args=(grab_ridmik_science_news.check,)))
-THREADS.append(Thread(target=run_function, args=(grab_science_news.check,)))
-THREADS.append(Thread(target=run_function, args=(grab_kalerkontho_science_news.check,)))
-THREADS.append(Thread(target=run_function, args=(grab_news.check,)))
-THREADS.append(Thread(target=run_function, args=(grab_bbc_news.check,)))
+THREADS.append(Thread(target=run_function, args=(nunotice.main,)))
+THREADS.append(Thread(target=run_function, args=(grab_ridmik_science_news.main,)))
+THREADS.append(Thread(target=run_function, args=(grab_science_news.main,)))
+THREADS.append(Thread(target=run_function, args=(grab_kalerkontho_science_news.check_tech_news,)))
+THREADS.append(Thread(target=run_function, args=(grab_news.check_and_notify,)))
+THREADS.append(Thread(target=run_function, args=(grab_bbc_news.main,)))
 
 
 # THREADS.append(Thread(target=grab_ridmik_science_news.check))

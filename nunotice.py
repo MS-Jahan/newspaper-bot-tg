@@ -134,8 +134,10 @@ def process_and_send_notices(notices, prev_links):
             try:
                 filename = download_file(link)
                 sent_message = NU_BOT.sendDocument(NU_CHAT_ID, open(filename, 'rb'), caption=reply, parse_mode='html')
+                print(reply)
                 if any(k in title for key in PORIKKHA_KEYWORDS for k in key):
                     NU_BOT.pinChatMessage(NU_CHAT_ID, sent_message['message_id'])
+                    print("Pinned message")
                 os.remove(filename)
             except Exception:
                 traceback.print_exc()
