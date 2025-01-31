@@ -55,17 +55,8 @@ def append_new_urls(urls):
         for url in urls:
             file.write(f"{url}\n")
 
-def process_article(article):
+def process_article(headline, author_name, url):
     """Extract article details and post to Telegram."""
-    headline = article.get("headline")
-    author_name = article.get("author-name", "-")
-    url = article.get("url")
-
-    print("url: ", url)
-
-    if not url:
-        return None
-
     page_content = get_html(url)
     scripts = page_content.find_all('script', {"type": "application/ld+json"})
 
@@ -105,12 +96,24 @@ def process_homepage(homepage, prev_urls):
         return []
 
     for article in articles:
-        time.sleep(2)
-        story = article.get("story") or {}
-        
-        if url and url not in prev_urls:
-            url = process_article(story)
-            new_urls.append(url)
+        try:
+            story = article.get("story") or {}
+            headline = article.get("headline")
+            author_name = article.get("author-name", "-")
+            url = article.get("url")
+
+            print("url: ", url)
+
+            if not url:
+                continue
+            
+            if url and url not in prev_urls:
+                url = process_article(headline, author_name, url)
+                new_urls.append(url)
+                time.sleep(2)
+        except Exception as e:
+            traceback.print_exc()
+            continue
 
     return new_urls
 
