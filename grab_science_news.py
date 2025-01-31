@@ -107,9 +107,9 @@ def process_homepage(homepage, prev_urls):
     for article in articles:
         time.sleep(2)
         story = article.get("story") or {}
-        url = process_article(story)
-
+        
         if url and url not in prev_urls:
+            url = process_article(story)
             new_urls.append(url)
 
     return new_urls
