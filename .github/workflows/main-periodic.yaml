@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: '3.9'
       - name: Update repo
-        run: apt update
+        run: sudo apt update
       - name: Installed package list
         run: apt list --installed
       - name: Update repo
