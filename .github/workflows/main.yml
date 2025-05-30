@@ -35,10 +35,10 @@ jobs:
       #   env:
       #     TELEGRAM_BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
       #     TELEGRAM_CHAT_ID: ${{ secrets.ERROR_MESSAGE_CHAT_ID }}
-      - name: Set up WireGuard Connection
-        uses: niklaskeerl/easy-wireguard-action@v2
-        with:
-          WG_CONFIG_FILE: ${{ secrets.WG_CONFIG_FILE }}
+      # - name: Set up WireGuard Connection
+      #   uses: niklaskeerl/easy-wireguard-action@v2
+      #   with:
+      #     WG_CONFIG_FILE: ${{ secrets.WG_CONFIG_FILE }}
       - name: Run the script
         run: python main.py
         working-directory: .
