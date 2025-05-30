@@ -1,7 +1,10 @@
 name: newspaper_scraper_periodic
-on:
-  schedule:
-    - cron: "*/30 * * * *"
+on: workflow_dispatch
+# on:
+#   schedule:
+#     - cron: "*/30 * * * *"
+
+
 
 jobs:
   scrape:
