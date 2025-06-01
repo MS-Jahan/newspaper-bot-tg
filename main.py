@@ -23,31 +23,38 @@ chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
 
 bot.sendMessage(chat_id, "News bot is awake! (from Github Actions)")
 
-if os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is True:
-    shutil.rmtree(os.getenv('NEWSPAPER_URLS_GIT_REPO'))
+# if os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is True:
+#     shutil.rmtree(os.getenv('NEWSPAPER_URLS_GIT_REPO'))
 
 
-os.system(f"git clone --depth=1 https://github.com/{os.getenv('NEWSPAPER_URLS_GIT_USERNAME')}/{os.getenv('NEWSPAPER_URLS_GIT_REPO')}/")
+# os.system(f"git clone --depth=1 https://github.com/{os.getenv('NEWSPAPER_URLS_GIT_USERNAME')}/{os.getenv('NEWSPAPER_URLS_GIT_REPO')}/")
 
-while os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is False:
-    print("Cloning isn't completed yet!")
-    time.sleep(2)
+# while os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is False:
+#     print("[main.py] Cloning isn't completed yet!")
+#     time.sleep(2)
 
-print("Cloning is completed!")
+print("[main.py] Cloning is completed!")
 
 THREADS = []
 
 def run_function(func):
+    func_name = func.__name__ if hasattr(func, "__name__") else func.__module__
+    print(f"[main.py] Starting execution of function: {func_name}")
     try:
         # nunotice.fetch()
         func()
+        print(f"[main.py] Successfully completed function: {func_name}")
     except Exception:
-        print(str(traceback.format_exc()))
-        bot.sendMessage(chat_id, str(traceback.format_exc()))
+        error_msg = str(traceback.format_exc())
+        print(f"[main.py] Error in function {func_name}:")
+        print(error_msg)
+        bot.sendMessage(chat_id, f"Error in {func_name}:\n{error_msg}")
 
+
+print("[main.py] Setting up threads for news fetching...")
 
 THREADS.append(Thread(target=run_function, args=(nunotice.main,)))
-THREADS.append(Thread(target=run_function, args=(grab_ridmik_science_news.main,)))
+# THREADS.append(Thread(target=run_function, args=(grab_ridmik_science_news.main,)))
 THREADS.append(Thread(target=run_function, args=(grab_science_news.main,)))
 THREADS.append(Thread(target=run_function, args=(grab_kalerkontho_science_news.check_tech_news,)))
 THREADS.append(Thread(target=run_function, args=(grab_news.check_and_notify,)))
@@ -60,19 +67,32 @@ THREADS.append(Thread(target=run_function, args=(grab_bbc_news.main,)))
 # THREADS.append(Thread(target=grab_news.check))
 # THREADS.append(Thread(target=grab_bbc_news.check))
 
-for thread in THREADS:
+print(f"[main.py] Starting {len(THREADS)} threads...")
+for i, thread in enumerate(THREADS):
+    print(f"[main.py] Starting thread {i+1}/{len(THREADS)}")
     thread.start()
 
-for thread in THREADS:
+print("[main.py] All threads started, waiting for completion...")
+for i, thread in enumerate(THREADS):
+    print(f"[main.py] Waiting for thread {i+1}/{len(THREADS)} to complete")
     thread.join()
+    print(f"[main.py] Thread {i+1}/{len(THREADS)} completed")
+
+print("[main.py] All threads have completed execution")
 
 
+print("[main.py] Executing git operations to save new URLs...")
 output = gitt.gitTask()
+print("[main.py] Git operations completed, sending output to chat...")
 bot.sendMessage(chat_id, output)
+print(f"[main.py] Git output sent to chat {chat_id}")
 time.sleep(1)
 
-print("Sent news for this time!")
+print("[main.py] All tasks completed for this execution cycle!")
+print("[main.py] Sending completion notification...")
 bot.sendMessage(chat_id, "Sent news for this time! (from Github Actions)")
+print(f"[main.py] Completion notification sent to chat {chat_id}")
+print("[main.py] News bot execution cycle finished successfully")
 
   
 # time.sleep(60*60)

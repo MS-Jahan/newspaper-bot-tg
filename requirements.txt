@@ -3,11 +3,11 @@ async-timeout
 attrs
 beautifulsoup4
 bs4
+httpx
 certifi
 chardet
 click
 Flask
-html-telegraph-poster
 idna
 itsdangerous
 Jinja2

@@ -106,7 +106,7 @@ def check_and_notify():
             except Exception:
                 print(traceback.format_exc())
     else:
-        print("No new articles to process.")
+        print("[grab_news.py] No new articles to process.")
 
 if __name__ == "__main__":
     check_and_notify()

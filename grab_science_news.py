@@ -102,7 +102,7 @@ def process_homepage(homepage, prev_urls):
             author_name = article.get("author-name", "-")
             url = article.get("url")
 
-            print("url: ", url)
+            print("[grab_science_news.py] url: ", url)
 
             if not url:
                 continue

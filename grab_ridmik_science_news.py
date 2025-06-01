@@ -90,7 +90,7 @@ def send_to_telegram(articles, prev_urls):
         title = article['title']
         if link not in prev_urls:
             try:
-                print(f"Sending link {index + 1}: {link}")
+                print(f"[grab_ridmik_science_news.py] Sending link {index + 1}: {link}")
                 text = (
                     f"<a href='https://t.me/iv?url={link}&rhash=e70d349033f6bb'>"
                     f"{title} - Ridmik News</a>"

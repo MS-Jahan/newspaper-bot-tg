@@ -31,7 +31,7 @@ def read_file_lines(file_path):
         with codecs.open(file_path, 'r', 'utf-8') as file:
             return file.read().splitlines()
     except Exception as e:
-        print(f"Error reading file {file_path}: {e}")
+        print(f"[grab_bbc_news.py] Error reading file {file_path}: {e}")
         return []
 
 def write_file_lines(file_path, lines):
@@ -44,6 +44,10 @@ def append_file_lines(file_path, lines):
             file.write(f"{line}\n")
 
 def get_html(url):
+    # if there's no hostname in the URL, add "https://www.bbc.com" to it
+    if not url.startswith("http"):
+        url = f"https://www.bbc.com{url}"
+    print(f"[grab_bbc_news.py] Fetching HTML from: {url}")
     scraper = cloudscraper.create_scraper()
     response = scraper.get(url)
     return BeautifulSoup(response.text, 'html.parser')
@@ -71,8 +75,9 @@ def process_index_pages(homepages, bogus_links, prev_urls):
 
     links_from_index_pages = list(dict.fromkeys(links_from_index_pages))
 
-    for i, link in enumerate(links_from_index_pages):
+    for link in links_from_index_pages:
         try:
+            print(f"[grab_bbc_news.py] Processing link: {link}")
             soup = get_html(link)
             title = soup.find("title").text
             time_tag = soup.find("time")
@@ -81,6 +86,7 @@ def process_index_pages(homepages, bogus_links, prev_urls):
                 post_links.append(link)
                 post_titles.append(title)
         except Exception:
+            print(f"[grab_bbc_news.py] Error processing link:")
             print(traceback.format_exc())
 
     return post_links, post_titles

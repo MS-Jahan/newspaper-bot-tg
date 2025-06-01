@@ -26,12 +26,12 @@ def load_saved_urls(file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read().splitlines()
     except (UnicodeDecodeError, FileNotFoundError):
-        print("Error reading saved URLs file. Attempting fallback handling.")
+        print("[grab_kalerkontho_science_news.py] Error reading saved URLs file. Attempting fallback handling.")
         try:
             with open(file_path, 'r', encoding='latin-1') as file:
                 return file.read().splitlines()
         except Exception as e:
-            print(f"Failed to read saved URLs file: {e}")
+            print(f"[grab_kalerkontho_science_news.py] Failed to read saved URLs file: {e}")
             return []
 
 def save_urls(file_path, urls):
@@ -83,7 +83,7 @@ def check_tech_news():
                             new_urls.append(full_url)
                             new_titles.append(title_text)
                         except AttributeError:
-                            print("Invalid link format.")
+                            print("[grab_kalerkontho_science_news.py] Invalid link format.")
 
             # Trim saved URLs if necessary
             if len(prev_urls) > 300:
@@ -106,16 +106,16 @@ def check_tech_news():
                         text = f"<a href='{iv_link['url']}'>{headline} - কালের কণ্ঠ</a>"
                         bot.sendMessage(chat_id, text, parse_mode='html')
                     except Exception as e:
-                        print(f"Error processing link {link}: {traceback.format_exc()}")
+                        print(f"[grab_kalerkontho_science_news.py] Error processing link {link}: {traceback.format_exc()}")
 
             # Save new URLs
             if new_urls:
                 append_urls(saved_urls_file_path, new_urls)
 
         except Exception as e:
-            print(f"Failed to fetch or process tech news: {traceback.format_exc()}")
+            print(f"[grab_kalerkontho_science_news.py] Failed to fetch or process tech news: {traceback.format_exc()}")
     else:
-        print("No saved URLs found or failed to load.")
+        print("[grab_kalerkontho_science_news.py] No saved URLs found or failed to load.")
 
 if __name__ == "__main__":
     check_tech_news()
