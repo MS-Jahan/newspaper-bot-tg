@@ -130,7 +130,7 @@ def download_file(url):
 # Core functions
 def fetch_html(url):
     retries = 3
-    max_content_size = 1 * 1024 * 1024  # 1 MB
+    max_content_size = 0.5 * 1024 * 1024  # 1 MB
 
     for attempt in range(retries):
         try:
@@ -194,7 +194,7 @@ def process_and_send_notices(notices, prev_links):
             hashtags = [f"#{val.replace(' ', '_')}" for key, val in keywords.items() if any(k in title for k in key)]
             print(f"[nunotice.py] Detected keywords: {', '.join(hashtags) if hashtags else 'None'}")
             reply += " ".join(hashtags)
-            
+            print(f"[nunotice.py] Reply: {reply}")
             try:
                 print(f"[nunotice.py] Attempting to download and send document: {link}")
                 filename = download_file(link)
