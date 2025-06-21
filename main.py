@@ -23,19 +23,20 @@ chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
 
 bot.sendMessage(chat_id, "News bot is awake! (from Github Actions)")
 
-# if os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is True:
-#     shutil.rmtree(os.getenv('NEWSPAPER_URLS_GIT_REPO'))
+if os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is True:
+    shutil.rmtree(os.getenv('NEWSPAPER_URLS_GIT_REPO'))
 
 
-# os.system(f"git clone --depth=1 https://github.com/{os.getenv('NEWSPAPER_URLS_GIT_USERNAME')}/{os.getenv('NEWSPAPER_URLS_GIT_REPO')}/")
+os.system(f"git clone --depth=1 https://github.com/{os.getenv('NEWSPAPER_URLS_GIT_USERNAME')}/{os.getenv('NEWSPAPER_URLS_GIT_REPO')}/")
 
-# while os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is False:
-#     print("[main.py] Cloning isn't completed yet!")
-#     time.sleep(2)
+while os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is False:
+    print("[main.py] Cloning isn't completed yet!")
+    time.sleep(2)
 
 print("[main.py] Cloning is completed!")
 
 THREADS = []
+THREAD_NAMES = {}  # Dictionary to store thread names
 
 def run_function(func):
     func_name = func.__name__ if hasattr(func, "__name__") else func.__module__
@@ -51,32 +52,35 @@ def run_function(func):
         bot.sendMessage(chat_id, f"Error in {func_name}:\n{error_msg}")
 
 
+def create_thread(func, name):
+    """Create a thread and store its name"""
+    thread = Thread(target=run_function, args=(func,))
+    THREADS.append(thread)
+    THREAD_NAMES[thread] = name
+    return thread
+
+
 print("[main.py] Setting up threads for news fetching...")
 
-THREADS.append(Thread(target=run_function, args=(nunotice.main,)))
-# THREADS.append(Thread(target=run_function, args=(grab_ridmik_science_news.main,)))
-THREADS.append(Thread(target=run_function, args=(grab_science_news.main,)))
-THREADS.append(Thread(target=run_function, args=(grab_kalerkontho_science_news.check_tech_news,)))
-THREADS.append(Thread(target=run_function, args=(grab_news.check_and_notify,)))
-THREADS.append(Thread(target=run_function, args=(grab_bbc_news.main,)))
-
-
-# THREADS.append(Thread(target=grab_ridmik_science_news.check))
-# THREADS.append(Thread(target=grab_science_news.check))
-# THREADS.append(Thread(target=grab_kalerkontho_science_news.check))
-# THREADS.append(Thread(target=grab_news.check))
-# THREADS.append(Thread(target=grab_bbc_news.check))
+# Create threads with descriptive names
+create_thread(grab_science_news.main, "Science News")
+create_thread(grab_kalerkontho_science_news.check_tech_news, "Kalerkontho Tech News")
+create_thread(grab_news.check_and_notify, "General News")
+create_thread(grab_bbc_news.main, "BBC News")
+create_thread(nunotice.main, "Nunotice")
 
 print(f"[main.py] Starting {len(THREADS)} threads...")
-for i, thread in enumerate(THREADS):
-    print(f"[main.py] Starting thread {i+1}/{len(THREADS)}")
+for i, thread in enumerate(THREADS, 1):
+    name = THREAD_NAMES[thread]
+    print(f"[main.py] Starting thread {i}/{len(THREADS)} ({name})")
     thread.start()
 
 print("[main.py] All threads started, waiting for completion...")
-for i, thread in enumerate(THREADS):
-    print(f"[main.py] Waiting for thread {i+1}/{len(THREADS)} to complete")
+for i, thread in enumerate(THREADS, 1):
+    name = THREAD_NAMES[thread]
+    print(f"[main.py] Waiting for thread {i}/{len(THREADS)} ({name}) to complete")
     thread.join()
-    print(f"[main.py] Thread {i+1}/{len(THREADS)} completed")
+    print(f"[main.py] Thread {i}/{len(THREADS)} ({name}) completed")
 
 print("[main.py] All threads have completed execution")
 
