@@ -66,7 +66,7 @@ def load_previous_links(file_path):
     print(f"[nunotice.py] Loading previously processed links from: {file_path}")
     try:
         with open(file_path, "r") as file:
-            links = file.read().splitlines()
+            links = [line.strip() for line in file.read().splitlines()]
             print(f"[nunotice.py] Successfully loaded {len(links)} links")
             if links:
                 print(f"[nunotice.py] First few links: {', '.join(links[:3])}")
@@ -172,7 +172,7 @@ def extract_notices(soup):
         anchor = div.find("a", recursive=False)
         if anchor:
             title = anchor.text.strip()
-            link = f"https://{quote('www.nu.ac.bd/' + anchor['href'])}"
+            link = f"https://{quote('www.nu.ac.bd/' + anchor['href'].strip())}"
             print(f"[nunotice.py] Notice {i+1}: {title[:50]}{'...' if len(title) > 50 else ''}")
             notices.append((title, link))
         else:
@@ -182,6 +182,10 @@ def extract_notices(soup):
     return notices
 
 def process_and_send_notices(notices, prev_links):
+    # print 1st 3 links from both notices and prev_links
+    print(f"[nunotice.py] First 3 notices links: {[link for title, link in notices[:3]]}")
+    print(f"[nunotice.py] First 3 prev_links: {list(prev_links)[:3]}")
+
     new_links = [link for title, link in notices if link not in prev_links]
     print(f"[nunotice.py] Found {len(new_links)} new notices to process")
     save_new_links(SAVED_URLS_FILE, new_links)
