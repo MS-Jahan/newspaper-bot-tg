@@ -1,5 +1,19 @@
 name: newspaper_scraper
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
+    inputs:
+      triggered_by:
+        description: 'Who triggered this workflow'
+        required: false
+        default: 'manual'
+        type: string
+      timestamp:
+        description: 'When this workflow was triggered'
+        required: false
+        type: string
+# on:
+#   schedule:
+#     - cron: "*/30 * * * *"
 
 jobs:
   scrape:

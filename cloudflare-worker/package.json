@@ -1,0 +1,22 @@
+{
+  "name": "newspaper-scraper-trigger",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker to trigger newspaper scraper GitHub Actions workflow",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "cloudflare",
+    "worker",
+    "github-actions",
+    "scheduler"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+} 

@@ -1,0 +1,16 @@
+name = "newspaper-scraper-trigger"
+main = "src/index.js"
+compatibility_date = "2024-01-01"
+
+[triggers]
+crons = ["*/30 * * * *"]  # Run every 30 minutes
+
+[vars]
+# These will be set via wrangler secret or environment variables
+# GITHUB_TOKEN = "your-github-token"
+# GITHUB_OWNER = "your-github-username"
+# GITHUB_REPO = "newspaper-bot-tg"
+# WORKFLOW_ID = "main-periodic.yaml"
+
+# Optional: Add any other variables you might need
+WORKER_ENVIRONMENT = "production" 

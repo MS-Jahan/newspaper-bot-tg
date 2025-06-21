@@ -1,10 +1,19 @@
 name: newspaper_scraper_periodic
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
+    inputs:
+      triggered_by:
+        description: 'Who triggered this workflow'
+        required: false
+        default: 'manual'
+        type: string
+      timestamp:
+        description: 'When this workflow was triggered'
+        required: false
+        type: string
 # on:
 #   schedule:
 #     - cron: "*/30 * * * *"
-
-
 
 jobs:
   scrape:
@@ -42,3 +51,8 @@ jobs:
       - name: Run the script
         run: python main.py
         working-directory: .
+      - name: Log trigger information
+        run: |
+          echo "Workflow triggered by: ${{ github.event.inputs.triggered_by || 'manual' }}"
+          echo "Trigger timestamp: ${{ github.event.inputs.timestamp || 'N/A' }}"
+          echo "GitHub run ID: ${{ github.run_id }}"
