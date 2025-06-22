@@ -23,18 +23,48 @@ jobs:
         working-directory: .
     steps:
       - name: Check out this repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: '3.9'
+        id: setup-python
+
+      - name: Cache Pip packages
+        id: cache-pip
+        uses: actions/cache@v4
+        with:
+          # Pip's cache directory
+          path: ~/.cache/pip
+          # A key that includes the OS, Python version, and a hash of the requirements file.
+          # The cache is invalidated only when the requirements file changes.
+          key: ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
+          # A fallback key to use the most recent cache if the exact key isn't found
+          restore-keys: |
+            ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-
+            ${{ runner.os }}-pip-
+
+      - name: Cache Apt packages
+        id: cache-apt
+        uses: actions/cache@v4
+        with:
+          # Apt's package archive directory
+          path: /var/cache/apt/archives
+          # A key that includes the OS and a hash of this workflow file.
+          # The cache is invalidated only when you change the list of apt packages in this file.
+          key: ${{ runner.os }}-apt-cache-${{ hashFiles('.github/workflows/newspaper_scraper.yml') }}
+          restore-keys: |
+            ${{ runner.os }}-apt-cache-
+
       - name: Installed package list
         run: apt list --installed
       - name: Update repo
-        run: sudo apt update
+        run: sudo apt-get update
       - name: Install necessary packages
-        run: sudo apt install git libxml2-dev libxslt-dev python3-dev python3-lxml
+        run: sudo apt-get install -y --no-install-recommends git libxml2-dev libxslt-dev python3-dev python3-lxml
       - name: Install all necessary python modules
+        # Only run this step if the pip cache was not restored from an exact key match
+        if: steps.cache-pip.outputs.cache-hit != 'true'
         run: pip install -r requirements.txt
       - name: Expose GitHub secrets as individual environment variables
         env:
