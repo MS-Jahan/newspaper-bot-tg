@@ -24,25 +24,15 @@ jobs:
     steps:
       - name: Check out this repo
         uses: actions/checkout@v4
-      - name: Set up Python
+
+      # Using Python's built-in dependency caching
+      - name: Set up Python with dependency caching
         uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-        id: setup-python
-
-      - name: Cache Pip packages
-        id: cache-pip
-        uses: actions/cache@v4
-        with:
-          # Pip's cache directory
-          path: ~/.cache/pip
-          # A key that includes the OS, Python version, and a hash of the requirements file.
-          # The cache is invalidated only when the requirements file changes.
-          key: ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/requirements.txt') }}
-          # A fallback key to use the most recent cache if the exact key isn't found
-          restore-keys: |
-            ${{ runner.os }}-pip-${{ steps.setup-python.outputs.python-version }}-
-            ${{ runner.os }}-pip-
+          # This automatically handles creating, saving, and restoring the pip cache.
+          # It's smart enough to use a hash of your requirements.txt file.
+          cache: 'pip'
 
       - name: Cache Apt packages
         id: cache-apt
@@ -58,20 +48,25 @@ jobs:
 
       - name: Installed package list
         run: apt list --installed
-      - name: Update repo
-        run: sudo apt-get update
-      - name: Install necessary packages
+        
+      - name: Update apt repository
+        run: sudo apt-get update -y
+        
+      - name: Install system dependencies
         run: sudo apt-get install -y --no-install-recommends git libxml2-dev libxslt-dev python3-dev python3-lxml
-      - name: Install all necessary python modules
-        # Only run this step if the pip cache was not restored from an exact key match
-        if: steps.cache-pip.outputs.cache-hit != 'true'
+        
+      # This step will now always run, but will be very fast on a cache hit
+      # because setup-python has already restored the downloaded packages.
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
+        
       - name: Expose GitHub secrets as individual environment variables
         env:
           SECRETS_CONTEXT: ${{ toJson(secrets) }}
         run: |
           secrets=$(echo "$SECRETS_CONTEXT" | jq -r 'to_entries[] | select(.key != "WG_CONFIG_FILE") | .key + "=" + .value')
           echo "$secrets" >> $GITHUB_ENV
+          
       # - name: Start SSH via tmate
       #   uses: P3TERX/ssh2actions@main
       #   # Send connection info to Telegram (optional)
@@ -83,6 +78,7 @@ jobs:
       #   uses: niklaskeerl/easy-wireguard-action@v2
       #   with:
       #     WG_CONFIG_FILE: ${{ secrets.WG_CONFIG_FILE }}
+      
       - name: Run the script
         run: python main.py
         working-directory: .
