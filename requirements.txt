@@ -3,7 +3,6 @@ async-timeout
 attrs
 beautifulsoup4
 bs4
-httpx
 certifi
 chardet
 click
@@ -17,7 +16,6 @@ multidict
 pycryptodome
 python-dotenv
 pytz
-requests
 pysocks
 requests-toolbelt
 six
@@ -28,5 +26,5 @@ typing-extensions
 urllib3
 Werkzeug
 yarl
-cloudscraper==1.2.58
+curl_cffi>=0.7.3
 lxml[html_clean]

@@ -1,8 +1,7 @@
 import os
 import time
 import traceback
-import httpx as requests
-import httpx
+from curl_cffi import requests
 from bs4 import BeautifulSoup
 from urllib.parse import quote
 from dotenv import load_dotenv
@@ -14,15 +13,15 @@ load_dotenv()
 
 # Constants
 HEADERS = {
-    'Host': 'www.nu.ac.bd',
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
+    "Host": "www.nu.ac.bd",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
 }
 SAVED_URLS_FILE = "newspaper-bot-urls/nu_notices.txt"
-ERROR_MESSAGE_CHAT_ID = os.getenv('ERROR_MESSAGE_CHAT_ID')
-NU_CHAT_ID = os.getenv('NATIONAL_UNIVERSITY_CHAT_ID')
+ERROR_MESSAGE_CHAT_ID = os.getenv("ERROR_MESSAGE_CHAT_ID")
+NU_CHAT_ID = os.getenv("NATIONAL_UNIVERSITY_CHAT_ID")
 
 # Initialize bot
-NU_BOT = telepot.Bot(os.getenv('BOT_TOKEN'))
+NU_BOT = telepot.Bot(os.getenv("BOT_TOKEN"))
 
 # Keyword mappings
 PORIKKHA_KEYWORDS = {
@@ -40,10 +39,10 @@ OTHER_KEYWORDS = {
     ("১ম সেমিস্টার", "প্রথম সেমিস্টার"): "1st Semester",
     ("২য় সেমিস্টার", "দ্বিতীয় সেমিস্টার"): "2nd Semester",
     ("৩য় সেমিস্টার", "তৃতীয় সেমিস্টার"): "3rd Semester",
-    ("৪র্থ সেমিস্টার", "চতুর্থ সেমিস্টার"): "4th Semester", 
+    ("৪র্থ সেমিস্টার", "চতুর্থ সেমিস্টার"): "4th Semester",
     ("CSE", "সিএসই"): "CSE",
     ("ECE", "ইসিই"): "ECE",
-    ("BBA","বিবিএ"): "BBA",
+    ("BBA", "বিবিএ"): "BBA",
     ("Professional", "প্রফেশনাল"): "Professional",
     ("MBA", "এমবিএ"): "MBA",
     ("অনার্স", "Honours"): "Honours",
@@ -61,6 +60,7 @@ OTHER_KEYWORDS = {
     ("এমএড", "MEd"): "MEd",
 }
 
+
 # Utility functions
 def load_previous_links(file_path):
     print(f"[nunotice.py] Loading previously processed links from: {file_path}")
@@ -71,7 +71,7 @@ def load_previous_links(file_path):
             if links:
                 print(f"[nunotice.py] First few links: {', '.join(links[:3])}")
                 if len(links) > 3:
-                    print(f"[nunotice.py] ... and {len(links)-3} more")
+                    print(f"[nunotice.py] ... and {len(links) - 3} more")
             return links
     except FileNotFoundError:
         print(f"[nunotice.py] File not found: {file_path}. Creating a new list.")
@@ -80,19 +80,21 @@ def load_previous_links(file_path):
         print(f"[nunotice.py] Error loading links from {file_path}: {str(e)}")
         return []
 
+
 def save_new_links(file_path, links):
     print(f"[nunotice.py] Saving {len(links)} new links to: {file_path}")
     try:
-        with open(file_path, 'a') as file:
+        with open(file_path, "a") as file:
             for i, link in enumerate(links):
                 file.write(f"{link}\n")
                 if i < 3:  # Only log the first few links
-                    print(f"[nunotice.py] Saved link {i+1}: {link}")
+                    print(f"[nunotice.py] Saved link {i + 1}: {link}")
             if len(links) > 3:
-                print(f"[nunotice.py] ... and {len(links)-3} more links saved")
+                print(f"[nunotice.py] ... and {len(links) - 3} more links saved")
         print(f"[nunotice.py] Successfully saved all {len(links)} links to {file_path}")
     except Exception as e:
         print(f"[nunotice.py] Error saving links to {file_path}: {str(e)}")
+
 
 def send_error_message(message):
     try:
@@ -100,63 +102,75 @@ def send_error_message(message):
     except Exception:
         print("[nunotice.py] Failed to send error message.")
 
+
 def download_file(url):
-    local_filename = url.split('/')[-1]
+    local_filename = url.split("/")[-1]
     print(f"[nunotice.py] Downloading file from {url}")
     print(f"[nunotice.py] Saving as {local_filename}")
-    # NOTE the stream=True parameter below
     try:
-        with requests.get(url, headers=HEADERS, stream=True, verify=False, timeout=(20,20)) as r:
-            print(f"[nunotice.py] Download response status: {r.status_code}")
-            r.raise_for_status()
-            file_size = int(r.headers.get('content-length', 0))
-            print(f"[nunotice.py] File size: {file_size/1024:.2f} KB")
-            
-            with open(local_filename, 'wb') as f:
-                downloaded = 0
-                for chunk in r.iter_content(chunk_size=8192): 
-                    # If you have chunk encoded response uncomment if
-                    # and set chunk_size parameter to None.
-                    #if chunk: 
-                    f.write(chunk)
-                    downloaded += len(chunk)
-                    
-            print(f"[nunotice.py] Download completed: {local_filename}")
+        response = requests.get(
+            url,
+            headers=HEADERS,
+            impersonate="chrome110",
+            timeout=60,
+            verify=False,
+        )
+        print(f"[nunotice.py] Download response status: {response.status_code}")
+        response.raise_for_status()
+        file_size = len(response.content)
+        print(f"[nunotice.py] File size: {file_size / 1024:.2f} KB")
+
+        with open(local_filename, "wb") as f:
+            f.write(response.content)
+
+        print(f"[nunotice.py] Download completed: {local_filename}")
         return local_filename
     except Exception as e:
         print(f"[nunotice.py] Error downloading file: {str(e)}")
         raise
-    
+
+
 # Core functions
 def fetch_html(url):
     retries = 3
-    max_content_size = 0.5 * 1024 * 1024  # 1 MB
+    max_content_size = 0.5 * 1024 * 1024  # 0.5 MB
 
     for attempt in range(retries):
         try:
             print(f"[nunotice.py] Attempt {attempt + 1}/{retries} to fetch {url}")
-            with httpx.stream("GET", url, headers=HEADERS, timeout=20, verify=False) as response:
-                print(f"[nunotice.py] Response status code: {response.status_code}")
-                response.raise_for_status()
+            response = requests.get(
+                url,
+                headers=HEADERS,
+                impersonate="chrome110",
+                timeout=60,
+                verify=False,
+            )
+            print(f"[nunotice.py] Response status code: {response.status_code}")
+            response.raise_for_status()
 
-                html_content = ""
-                content_size = 0
-                for chunk in response.iter_bytes():
-                    html_content += chunk.decode('utf-8', errors='replace')
-                    content_size += len(chunk)
-                    print(f"[nunotice.py] Downloaded {content_size/1024:.2f} KB so far")
-                    if content_size >= max_content_size:
-                        print(f"[nunotice.py] Reached size limit. Stopping download.")
-                        break
+            html_content = response.text
+            content_size = len(response.content)
+            print(f"[nunotice.py] Downloaded {content_size / 1024:.2f} KB")
 
-            print(f"[nunotice.py] Successfully fetched content (size: {len(html_content)} bytes)")
-            return BeautifulSoup(html_content, 'html.parser')
-        except httpx.RequestError as e:
+            # Truncate if over size limit
+            if content_size >= max_content_size:
+                print(f"[nunotice.py] Content exceeds size limit, truncating.")
+                html_content = html_content[: int(max_content_size)]
+
+            print(
+                f"[nunotice.py] Successfully fetched content (size: {len(html_content)} bytes)"
+            )
+            return BeautifulSoup(html_content, "html.parser")
+        except requests.RequestsError as e:
+            print(f"[nunotice.py] Attempt {attempt + 1} failed. Error: {str(e)}")
+            time.sleep(5)
+        except Exception as e:
             print(f"[nunotice.py] Attempt {attempt + 1} failed. Error: {str(e)}")
             time.sleep(5)
 
     send_error_message("Failed to fetch HTML after multiple attempts.")
     return None
+
 
 def extract_notices(soup):
     if not soup:
@@ -167,50 +181,73 @@ def extract_notices(soup):
     notices = []
     news_items = soup.find_all("div", class_="news-item")
     print(f"[nunotice.py] Found {len(news_items)} news item divs")
-    
+
     for i, div in enumerate(news_items):
         anchor = div.find("a", recursive=False)
         if anchor:
             title = anchor.text.strip()
             link = f"https://{quote('www.nu.ac.bd/' + anchor['href'].strip())}"
-            print(f"[nunotice.py] Notice {i+1}: {title[:50]}{'...' if len(title) > 50 else ''}")
+            print(
+                f"[nunotice.py] Notice {i + 1}: {title[:50]}{'...' if len(title) > 50 else ''}"
+            )
             notices.append((title, link))
         else:
-            print(f"[nunotice.py] Notice {i+1}: No anchor tag found")
-    
+            print(f"[nunotice.py] Notice {i + 1}: No anchor tag found")
+
     print(f"[nunotice.py] Successfully extracted {len(notices)} notices")
     return notices
 
+
 def process_and_send_notices(notices, prev_links):
     # print 1st 3 links from both notices and prev_links
-    print(f"[nunotice.py] First 3 notices links: {[link for title, link in notices[:3]]}")
+    print(
+        f"[nunotice.py] First 3 notices links: {[link for title, link in notices[:3]]}"
+    )
     print(f"[nunotice.py] First 3 prev_links: {list(prev_links)[:3]}")
 
     new_links = [link for title, link in notices if link not in prev_links]
     print(f"[nunotice.py] Found {len(new_links)} new notices to process")
+
+    # Limit to latest 100 notices to avoid spamming
+    new_links = new_links[:100]
+    if len(new_links) == 100:
+        print("[nunotice.py] Limited to 100 latest notices to avoid spamming")
+
     save_new_links(SAVED_URLS_FILE, new_links)
 
     for i, (title, link) in enumerate(notices):
         if link in new_links:
-            print(f"[nunotice.py] Processing notice {i+1}/{len(notices)}: {title}")
+            print(f"[nunotice.py] Processing notice {i + 1}/{len(notices)}: {title}")
             reply = f"<a href='{link}'>{title}</a>\n\n"
             keywords = PORIKKHA_KEYWORDS | OTHER_KEYWORDS
-            hashtags = [f"#{val.replace(' ', '_')}" for key, val in keywords.items() if any(k in title for k in key)]
-            print(f"[nunotice.py] Detected keywords: {', '.join(hashtags) if hashtags else 'None'}")
+            hashtags = [
+                f"#{val.replace(' ', '_')}"
+                for key, val in keywords.items()
+                if any(k in title for k in key)
+            ]
+            print(
+                f"[nunotice.py] Detected keywords: {', '.join(hashtags) if hashtags else 'None'}"
+            )
             reply += " ".join(hashtags)
             print(f"[nunotice.py] Reply: {reply}")
             try:
                 print(f"[nunotice.py] Attempting to download and send document: {link}")
                 filename = download_file(link)
                 print(f"[nunotice.py] Sending document to chat {NU_CHAT_ID}")
-                sent_message = NU_BOT.sendDocument(NU_CHAT_ID, open(filename, 'rb'), caption=reply, parse_mode='html')
-                print(f"[nunotice.py] Document sent successfully with message ID: {sent_message['message_id']}")
-                
+                sent_message = NU_BOT.sendDocument(
+                    NU_CHAT_ID, open(filename, "rb"), caption=reply, parse_mode="html"
+                )
+                print(
+                    f"[nunotice.py] Document sent successfully with message ID: {sent_message['message_id']}"
+                )
+
                 if any(k in title for key in PORIKKHA_KEYWORDS for k in key):
-                    print(f"[nunotice.py] Notice contains exam-related keyword, pinning message")
-                    NU_BOT.pinChatMessage(NU_CHAT_ID, sent_message['message_id'])
+                    print(
+                        f"[nunotice.py] Notice contains exam-related keyword, pinning message"
+                    )
+                    NU_BOT.pinChatMessage(NU_CHAT_ID, sent_message["message_id"])
                     print("[nunotice.py] Message pinned successfully")
-                
+
                 print(f"[nunotice.py] Removing temporary file: {filename}")
                 os.remove(filename)
                 print("[nunotice.py] File removed successfully")
@@ -218,11 +255,12 @@ def process_and_send_notices(notices, prev_links):
                 print(f"[nunotice.py] Error sending document: {str(e)}")
                 traceback.print_exc()
                 print(f"[nunotice.py] Falling back to text message")
-                NU_BOT.sendMessage(NU_CHAT_ID, reply, parse_mode='html')
+                NU_BOT.sendMessage(NU_CHAT_ID, reply, parse_mode="html")
                 print("[nunotice.py] Text message sent successfully")
-            
+
             print(f"[nunotice.py] Waiting 3 seconds before processing next notice...")
             time.sleep(3)
+
 
 def main():
     print("[nunotice.py] Starting NU Notice Fetcher...")
@@ -236,6 +274,7 @@ def main():
     notices = extract_notices(soup)
     print(f"[nunotice.py] Found {len(notices)} notices in total")
     process_and_send_notices(notices, prev_links)
+
 
 if __name__ == "__main__":
     main()
