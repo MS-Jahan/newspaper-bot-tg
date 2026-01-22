@@ -11,6 +11,7 @@ from scraper_utils import (
     append_urls_to_file,
     trim_url_file,
 )
+from gitt import commit_file
 
 # Load environment variables
 load_dotenv()
@@ -111,7 +112,9 @@ def main():
     articles = fetch_articles(HOMEPAGE_URL)
     new_urls = send_to_telegram(articles, prev_urls)
 
-    save_urls(saved_urls_path, new_urls)
+    if new_urls:
+        save_urls(saved_urls_path, new_urls)
+        commit_file(saved_urls_path, "grab_ridmik: Added new Ridmik URLs")
 
 
 if __name__ == "__main__":

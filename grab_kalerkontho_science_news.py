@@ -12,6 +12,7 @@ from scraper_utils import (
     append_urls_to_file,
     DEFAULT_HEADERS,
 )
+from gitt import commit_file
 
 # Constants
 BASE_URL = "https://www.kalerkantho.com"
@@ -113,6 +114,7 @@ def check_tech_news():
             # Save new URLs
             if new_urls:
                 append_urls(saved_urls_file_path, new_urls)
+                commit_file(saved_urls_file_path, "grab_kalerkontho: Added new KK URLs")
 
         except Exception as e:
             print(

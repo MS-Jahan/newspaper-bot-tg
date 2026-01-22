@@ -7,6 +7,7 @@ from urllib.parse import quote
 from dotenv import load_dotenv
 import telepot
 from helpers import *
+from gitt import commit_file
 
 # Load environment variables
 load_dotenv()
@@ -213,7 +214,9 @@ def process_and_send_notices(notices, prev_links):
     if len(new_links) == 100:
         print("[nunotice.py] Limited to 100 latest notices to avoid spamming")
 
-    save_new_links(SAVED_URLS_FILE, new_links)
+    if new_links:
+        save_new_links(SAVED_URLS_FILE, new_links)
+        commit_file(SAVED_URLS_FILE, "nunotice: Added new NU notice URLs")
 
     for i, (title, link) in enumerate(notices):
         if link in new_links:

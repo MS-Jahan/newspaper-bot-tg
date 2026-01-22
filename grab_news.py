@@ -14,6 +14,7 @@ from scraper_utils import (
     save_urls_to_file,
     DEFAULT_HEADERS,
 )
+from gitt import commit_file
 
 # Load environment variables
 load_dotenv()
@@ -102,6 +103,7 @@ def check_and_notify():
 
     if filtered_articles:
         append_slugs([article["slug"] for article in filtered_articles])
+        commit_file(SAVED_URLS_PATH, "grab_news: Added new Prothom Alo URLs")
 
         for article in filtered_articles:
             try:

@@ -13,23 +13,25 @@ import shutil
 import gitt
 from threading import Thread
 
-# load_dotenv()
+load_dotenv()
 
 # Needed when hosted on heroku like services
 # keep_alive.keep_alive()
 
-bot = telepot.Bot(os.getenv('BOT_TOKEN'))
-chat_id = os.getenv('ERROR_MESSAGE_CHAT_ID')
+bot = telepot.Bot(os.getenv("BOT_TOKEN"))
+chat_id = os.getenv("ERROR_MESSAGE_CHAT_ID")
 
 bot.sendMessage(chat_id, "News bot is awake! (from Github Actions)")
 
-if os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is True:
-    shutil.rmtree(os.getenv('NEWSPAPER_URLS_GIT_REPO'))
+if os.path.isdir(os.getenv("NEWSPAPER_URLS_GIT_REPO")) is True:
+    shutil.rmtree(os.getenv("NEWSPAPER_URLS_GIT_REPO"))
 
 
-os.system(f"git clone --depth=1 https://github.com/{os.getenv('NEWSPAPER_URLS_GIT_USERNAME')}/{os.getenv('NEWSPAPER_URLS_GIT_REPO')}/")
+os.system(
+    f"git clone --depth=1 https://github.com/{os.getenv('NEWSPAPER_URLS_GIT_USERNAME')}/{os.getenv('NEWSPAPER_URLS_GIT_REPO')}/"
+)
 
-while os.path.isdir(os.getenv('NEWSPAPER_URLS_GIT_REPO')) is False:
+while os.path.isdir(os.getenv("NEWSPAPER_URLS_GIT_REPO")) is False:
     print("[main.py] Cloning isn't completed yet!")
     time.sleep(2)
 
@@ -37,6 +39,7 @@ print("[main.py] Cloning is completed!")
 
 THREADS = []
 THREAD_NAMES = {}  # Dictionary to store thread names
+
 
 def run_function(func):
     func_name = func.__name__ if hasattr(func, "__name__") else func.__module__
@@ -84,13 +87,15 @@ for i, thread in enumerate(THREADS, 1):
 
 print("[main.py] All threads have completed execution")
 
-
-print("[main.py] Executing git operations to save new URLs...")
+# Note: Each scraper now commits its own URL changes immediately after saving.
+# The final gitTask() is kept as a safety net to catch any uncommitted changes.
+print("[main.py] Running final git sync (catches any uncommitted changes)...")
 output = gitt.gitTask()
-print("[main.py] Git operations completed, sending output to chat...")
-bot.sendMessage(chat_id, output)
-print(f"[main.py] Git output sent to chat {chat_id}")
-time.sleep(1)
+if output and "No changes" not in output and "Nothing to commit" not in output:
+    print("[main.py] Final git sync result:")
+    print(output)
+else:
+    print("[main.py] No additional changes to commit (scrapers already committed)")
 
 print("[main.py] All tasks completed for this execution cycle!")
 print("[main.py] Sending completion notification...")
@@ -98,5 +103,5 @@ bot.sendMessage(chat_id, "Sent news for this time! (from Github Actions)")
 print(f"[main.py] Completion notification sent to chat {chat_id}")
 print("[main.py] News bot execution cycle finished successfully")
 
-  
+
 # time.sleep(60*60)

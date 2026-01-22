@@ -15,6 +15,7 @@ from scraper_utils import (
     append_urls_to_file,
     DEFAULT_HEADERS,
 )
+from gitt import commit_file
 
 # Load environment variables
 load_dotenv()
@@ -142,6 +143,7 @@ def main():
 
     if all_new_urls:
         append_new_urls(all_new_urls)
+        commit_file(URLS_FILE, "grab_science_news: Added new PA science URLs")
 
 
 if __name__ == "__main__":

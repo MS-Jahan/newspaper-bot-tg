@@ -13,6 +13,7 @@ from scraper_utils import (
     fetch_url,
     DEFAULT_HEADERS,
 )
+from gitt import commit_file
 
 # Load environment variables
 load_dotenv()
@@ -136,7 +137,9 @@ def main():
 
     new_urls = send_links_to_telegram(post_links, post_titles)
 
-    append_file_lines(SAVED_URLS_FILE_NAME, new_urls)
+    if new_urls:
+        append_file_lines(SAVED_URLS_FILE_NAME, new_urls)
+        commit_file(SAVED_URLS_FILE_NAME, "grab_bbc_news: Added new BBC URLs")
 
 
 if __name__ == "__main__":
