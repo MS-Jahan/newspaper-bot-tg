@@ -2,6 +2,7 @@ import os
 import time
 import subprocess
 from threading import Lock
+from typing import Optional, Tuple
 
 # Thread-safe lock for git operations
 _git_lock = Lock()
@@ -11,8 +12,8 @@ _git_configured = False
 
 
 def _run_git_command(
-    cmd: str, cwd: str | None = None, hide_output: bool = False
-) -> tuple[bool, str]:
+    cmd: str, cwd: Optional[str] = None, hide_output: bool = False
+) -> Tuple[bool, str]:
     """Run a git command and return (success, output)."""
     try:
         result = subprocess.run(
