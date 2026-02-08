@@ -1,0 +1,14 @@
+[Unit]
+Description=Flask Proxy Server
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/mnt/DABCEB02BCEAD851/Projects/newspaper-bot-tg
+ExecStart=/usr/bin/python3 /mnt/DABCEB02BCEAD851/Projects/newspaper-bot-tg/proxy_server.py
+Restart=always
+Environment="PROXY_API_KEY=your_secret_api_key_here"
+Environment="PORT=5000"
+
+[Install]
+WantedBy=multi-user.target

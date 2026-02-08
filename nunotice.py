@@ -24,6 +24,10 @@ NU_CHAT_ID = os.getenv("NATIONAL_UNIVERSITY_CHAT_ID")
 # Initialize bot
 NU_BOT = telepot.Bot(os.getenv("BOT_TOKEN"))
 
+# Proxy Configuration
+PROXY_SERVER_URL = os.getenv("PROXY_SERVER_URL")
+PROXY_API_KEY = os.getenv("PROXY_API_KEY")
+
 # Keyword mappings
 PORIKKHA_KEYWORDS = {
     ("পরীক্ষা",): "Exam",
@@ -104,27 +108,81 @@ def send_error_message(message):
         print("[nunotice.py] Failed to send error message.")
 
 
+def make_request(url, headers=None, impersonate="chrome", timeout=60, verify=False, stream=False):
+    """
+    Makes a request either directly or via the configured proxy server.
+    """
+    if PROXY_SERVER_URL:
+        print(f"[nunotice.py] Routing request for {url} through proxy: {PROXY_SERVER_URL}")
+        try:
+            payload = {
+                "url": url,
+                "headers": headers,
+                "impersonate": impersonate,
+                "timeout": timeout,
+                "verify": verify,
+                "stream": stream
+            }
+            proxy_headers = {}
+            if PROXY_API_KEY:
+                proxy_headers['X-API-KEY'] = PROXY_API_KEY
+
+            response = requests.post(
+                f"{PROXY_SERVER_URL}/fetch",
+                json=payload,
+                headers=proxy_headers,
+                timeout=timeout + 10,  # Add buffer for proxy overhead
+                stream=stream
+            )
+            
+            # If proxy fails (500), it returns {"error": ...}
+            if response.status_code == 500 and response.headers.get('content-type') == 'application/json':
+                try:
+                    # If streaming, we might need to read a bit to see error, 
+                    # but typically 500 responses aren't huge streams.
+                    # safer to just let it be or read if not streaming.
+                    pass 
+                except:
+                    pass
+            
+            return response
+        except Exception as e:
+            print(f"[nunotice.py] Error communicating with proxy server: {e}")
+            raise
+    else:
+        return requests.get(
+            url,
+            headers=headers,
+            impersonate=impersonate,
+            timeout=timeout,
+            verify=verify,
+            stream=stream
+        )
+
 def download_file(url):
     local_filename = url.split("/")[-1]
     print(f"[nunotice.py] Downloading file from {url}")
     print(f"[nunotice.py] Saving as {local_filename}")
     try:
-        response = requests.get(
+        response = make_request(
             url,
             headers=HEADERS,
-            impersonate="chrome110",
+            impersonate="chrome",
             timeout=60,
             verify=False,
+            stream=True
         )
         print(f"[nunotice.py] Download response status: {response.status_code}")
         response.raise_for_status()
-        file_size = len(response.content)
-        print(f"[nunotice.py] File size: {file_size / 1024:.2f} KB")
-
+        
         with open(local_filename, "wb") as f:
-            f.write(response.content)
-
-        print(f"[nunotice.py] Download completed: {local_filename}")
+            downloaded = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+                    downloaded += len(chunk)
+        
+        print(f"[nunotice.py] Download completed: {local_filename} ({downloaded / 1024:.2f} KB)")
         return local_filename
     except Exception as e:
         print(f"[nunotice.py] Error downloading file: {str(e)}")
@@ -139,27 +197,30 @@ def fetch_html(url):
     for attempt in range(retries):
         try:
             print(f"[nunotice.py] Attempt {attempt + 1}/{retries} to fetch {url}")
-            response = requests.get(
+            response = make_request(
                 url,
                 headers=HEADERS,
-                impersonate="chrome110",
+                impersonate="chrome",
                 timeout=60,
                 verify=False,
+                stream=True
             )
             print(f"[nunotice.py] Response status code: {response.status_code}")
             response.raise_for_status()
 
-            html_content = response.text
-            content_size = len(response.content)
-            print(f"[nunotice.py] Downloaded {content_size / 1024:.2f} KB")
-
-            # Truncate if over size limit
-            if content_size >= max_content_size:
-                print(f"[nunotice.py] Content exceeds size limit, truncating.")
-                html_content = html_content[: int(max_content_size)]
+            content = b""
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    content += chunk
+                    if len(content) >= max_content_size:
+                        print(f"[nunotice.py] Content reached {len(content)} bytes, stopping download.")
+                        break
+            
+            print(f"[nunotice.py] Downloaded {len(content) / 1024:.2f} KB")
+            html_content = content.decode('utf-8', errors='ignore')
 
             print(
-                f"[nunotice.py] Successfully fetched content (size: {len(html_content)} bytes)"
+                f"[nunotice.py] Successfully fetched content (size: {len(html_content)} chars)"
             )
             return BeautifulSoup(html_content, "html.parser")
         except requests.RequestsError as e:
