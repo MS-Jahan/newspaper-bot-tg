@@ -52,7 +52,10 @@ def run_function(func):
         error_msg = str(traceback.format_exc())
         print(f"[main.py] Error in function {func_name}:")
         print(error_msg)
-        bot.sendMessage(chat_id, f"Error in {func_name}:\n{error_msg}")
+        try:
+            bot.sendMessage(chat_id, f"Error in {func_name}:\n{error_msg}")
+        except Exception as send_err:
+            print(f"[main.py] Failed to send error notification: {send_err}")
 
 
 def create_thread(func, name):
@@ -99,8 +102,11 @@ else:
 
 print("[main.py] All tasks completed for this execution cycle!")
 print("[main.py] Sending completion notification...")
-bot.sendMessage(chat_id, "Sent news for this time! (from Github Actions)")
-print(f"[main.py] Completion notification sent to chat {chat_id}")
+try:
+    bot.sendMessage(chat_id, "Sent news for this time! (from Github Actions)")
+    print(f"[main.py] Completion notification sent to chat {chat_id}")
+except Exception as e:
+    print(f"[main.py] Failed to send completion notification: {e}")
 print("[main.py] News bot execution cycle finished successfully")
 
 
